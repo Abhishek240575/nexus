@@ -1,3 +1,4 @@
+import { postsService, usersService } from '@/services/posts.service';
 import { useState, useEffect, useRef } from 'react';
 import { useInfiniteQuery }   from '@tanstack/react-query';
 import PostCard               from '@/components/post/PostCard';
@@ -18,7 +19,7 @@ export default function Feed({ type, hashtag, handle, tab }: FeedProps) {
     if (type === 'home')    return postsService.getHomeFeed(pageParam);
     if (type === 'explore') return postsService.getExploreFeed(pageParam);
     if (type === 'hashtag') return postsService.getPostsByHashtag(hashtag!, pageParam);
-    if (type === 'profile') return (postsService as any).getUserPosts(handle!, tab, pageParam);
+    if (type === 'profile') return usersService.getUserPosts(handle!, tab, pageParam);
     return postsService.getHomeFeed(pageParam);
   };
 
