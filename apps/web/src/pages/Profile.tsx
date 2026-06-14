@@ -46,9 +46,9 @@ export default function Profile() {
             className="w-20 h-20 rounded-full border-4 border-white dark:border-black object-cover" />
           <div>
             {isMe ? (
-              <button className="border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white font-semibold px-4 py-1.5 rounded-full text-sm hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
-                Edit profile
-              </button>
+              <Link to="/settings" className="border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white font-semibold px-4 py-1.5 rounded-full text-sm hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+                 Edit profile
+              </Link>
             ) : (
               <button
                 onClick={() => followMutation.mutate()}
