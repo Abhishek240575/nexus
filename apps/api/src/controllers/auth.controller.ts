@@ -44,7 +44,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
   // Store email verification token in Redis (24h TTL)
   await redis.setex(`verify:${verifyToken}`, 86400, user.id);
-  await sendVerificationEmail(email, handle, verifyToken);
+  sendVerificationEmail(email, handle, verifyToken).catch(err => 
+  console.error('[Email] Failed to send verification email:', err)
+);
 
   const accessToken  = signAccessToken(user);
   const refreshToken = signRefreshToken(user.id);
