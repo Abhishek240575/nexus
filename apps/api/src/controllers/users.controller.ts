@@ -28,65 +28,31 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
 // ─── Get user posts ───────────────────────────────────────────────────────────
 export const getUserPosts = async (req: Request, res: Response): Promise<void> => {
   const { handle } = req.params;
-  const viewerId   = (req as any).user?.id;
-  const limit      = Math.min(Number(req.query.limit) || 20, 50);
-  const cursor     = req.query.cursor as string;
-  const tab        = (req.query.tab as string) || 'posts'; // posts | replies | media | likes
+  const limit  = Math.min(Number(req.query.limit) || 20, 50);
+  const cursor = (req.query.cursor as string) || null;
+  const tab    = (req.query.tab as string) || 'posts';
 
   const { rows: userRows } = await db.query('SELECT id FROM users WHERE handle = $1', [handle]);
   if (!userRows[0]) { R.notFound(res, 'User not found'); return; }
   const profileId = userRows[0].id;
 
-  let query = '';
-  let params: any[] = [];
+  let whereClause = 'p.user_id = $1 AND p.is_published = TRUE';
+  if (tab === 'replies') whereClause += ' AND p.reply_to_id IS NOT NULL';
+  else if (tab === 'media') whereClause += ' AND array_length(p.media_urls, 1) > 0';
+  else whereClause += ' AND p.reply_to_id IS NULL';
 
-  if (tab === 'likes') {
-    query = `
-      SELECT p.*, l.created_at AS liked_at,
-             u.handle AS author_handle, u.display_name AS author_name,
-             u.avatar_url AS author_avatar, u.verified AS author_verified,
-             u.premium_tier AS author_tier
-      FROM likes l
-      JOIN posts p ON p.id = l.post_id
-      JOIN users u ON u.id = p.user_id
-      WHERE l.user_id = $1 AND p.is_published = TRUE
-      ${cursor ? 'AND l.created_at < $3' : ''}
-      ORDER BY l.created_at DESC LIMIT $2`;
-    params = cursor ? [profileId, limit, cursor] : [profileId, limit];
-  } else if (tab === 'media') {
-    query = `
-      SELECT p.*, u.handle AS author_handle, u.display_name AS author_name,
-             u.avatar_url AS author_avatar, u.verified AS author_verified,
-             u.premium_tier AS author_tier
-      FROM posts p JOIN users u ON u.id = p.user_id
-      WHERE p.user_id = $1 AND array_length(p.media_urls, 1) > 0
-        AND p.is_published = TRUE
-      ${cursor ? 'AND p.created_at < $3' : ''}
-      ORDER BY p.created_at DESC LIMIT $2`;
-    params = cursor ? [profileId, limit, cursor] : [profileId, limit];
-  } else if (tab === 'replies') {
-    query = `
-      SELECT p.*, u.handle AS author_handle, u.display_name AS author_name,
-             u.avatar_url AS author_avatar, u.verified AS author_verified,
-             u.premium_tier AS author_tier
-      FROM posts p JOIN users u ON u.id = p.user_id
-      WHERE p.user_id = $1 AND p.reply_to_id IS NOT NULL AND p.is_published = TRUE
-      ${cursor ? 'AND p.created_at < $3' : ''}
-      ORDER BY p.created_at DESC LIMIT $2`;
-    params = cursor ? [profileId, limit, cursor] : [profileId, limit];
-  } else {
-    query = `
-      SELECT p.*, u.handle AS author_handle, u.display_name AS author_name,
-             u.avatar_url AS author_avatar, u.verified AS author_verified,
-             u.premium_tier AS author_tier
-      FROM posts p JOIN users u ON u.id = p.user_id
-      WHERE p.user_id = $1 AND p.reply_to_id IS NULL AND p.is_published = TRUE
-      ${cursor ? 'AND p.created_at < $3' : ''}
-      ORDER BY p.created_at DESC LIMIT $2`;
-    params = cursor ? [profileId, limit, cursor] : [profileId, limit];
-  }
+  const { rows } = await db.query(
+    `SELECT p.*, u.handle AS author_handle, u.display_name AS author_name,
+            u.avatar_url AS author_avatar, u.verified AS author_verified,
+            u.premium_tier AS author_tier
+     FROM posts p JOIN users u ON u.id = p.user_id
+     WHERE ${whereClause}
+       AND ($3::timestamptz IS NULL OR p.created_at < $3::timestamptz)
+     ORDER BY p.created_at DESC
+     LIMIT $2`,
+    [profileId, limit, cursor]
+  );
 
-  const { rows } = await db.query(query, params);
   R.ok(res, {
     data:        rows,
     next_cursor: rows.length === limit ? rows[rows.length - 1].created_at : null,
