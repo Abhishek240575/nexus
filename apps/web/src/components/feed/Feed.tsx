@@ -18,7 +18,7 @@ export default function Feed({ type, hashtag, handle, tab }: FeedProps) {
     if (type === 'home')    return postsService.getHomeFeed(pageParam);
     if (type === 'explore') return postsService.getExploreFeed(pageParam);
     if (type === 'hashtag') return postsService.getPostsByHashtag(hashtag!, pageParam);
-    if (type === 'profile') return postsService.getUserPosts(handle!, tab, pageParam) as any;
+    if (type === 'profile') return (postsService as any).getUserPosts(handle!, tab, pageParam);
     return postsService.getHomeFeed(pageParam);
   };
 
