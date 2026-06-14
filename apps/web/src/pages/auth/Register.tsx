@@ -23,7 +23,7 @@ export default function Register() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      const res = await authService.register(data);
+      const res = await authService.register(data as { handle: string; email: string; password: string; display_name?: string });
       const { user, access_token, refresh_token } = res.data.data;
       setAuth(user, access_token, refresh_token);
       connectSocket();
