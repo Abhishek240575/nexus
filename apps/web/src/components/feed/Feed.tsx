@@ -2,7 +2,6 @@ import { postsService, usersService } from '@/services/posts.service';
 import { useState, useEffect, useRef } from 'react';
 import { useInfiniteQuery }   from '@tanstack/react-query';
 import PostCard               from '@/components/post/PostCard';
-import { postsService }       from '@/services/posts.service';
 import { Loader2 }            from 'lucide-react';
 
 interface FeedProps {
