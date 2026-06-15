@@ -45,6 +45,11 @@ export default function PostComposer({
       queryClient.invalidateQueries({ queryKey: ['feed'] });
       queryClient.invalidateQueries({ queryKey: ['replies', replyToId] });
       onPosted?.();
+      // Re-check feed after AI moderation runs (~3 seconds)
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['feed'] });
+        queryClient.invalidateQueries({ queryKey: ['replies', replyToId] });
+      }, 4000);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to post');
     } finally {
