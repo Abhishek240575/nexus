@@ -21,6 +21,7 @@ import debatesRoutes       from './routes/debates.routes';
 import spacesRoutes        from './routes/spaces.routes';
 import narrativeRoutes     from './routes/narrative.routes';
 import translationRoutes   from './routes/translation.routes';
+import communityModRoutes  from './routes/community-mod.routes';
 
 const app = express();
 
@@ -59,6 +60,7 @@ app.use('/api/debates',       debatesRoutes);
 app.use('/api/spaces',        spacesRoutes);
 app.use('/api/narrative',     narrativeRoutes);
 app.use('/api/translate',    translationRoutes);
+app.use('/api/communities/:slug/mod', communityModRoutes);
 
 // ─── Error handling ───────────────────────────────────────────────────────────
 app.use(notFoundHandler);

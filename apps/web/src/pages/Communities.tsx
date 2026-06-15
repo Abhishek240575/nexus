@@ -76,6 +76,12 @@ export default function Communities() {
                 {joinMutation.isPending ? '…' : comm.is_member ? 'Joined' : 'Join'}
               </button>
             )}
+            {comm.my_role && ['owner', 'moderator'].includes(comm.my_role) && (
+              <Link to={`/communities/${slug}/mod`}
+                className="flex items-center gap-1 border border-brand text-brand px-3 py-1.5 rounded-full text-sm font-medium hover:bg-brand/10 transition-colors">
+                🛡️ Mod
+              </Link>
+            )}
           </div>
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">{comm.name}</h1>
