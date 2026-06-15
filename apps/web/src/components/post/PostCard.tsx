@@ -122,6 +122,17 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
     } catch {}
   };
 
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    const url = `${window.location.origin}/${post.author_handle}/post/${post.id}`;
+    if (navigator.share) {
+      await navigator.share({ title: `Post by @${post.author_handle}`, url });
+    } else {
+      await navigator.clipboard.writeText(url);
+      alert('Link copied to clipboard!');
+    }
+  };
+
   const renderContent = (content: string) => {
     const parts = content.split(/(#[a-zA-Z0-9_]+|@[a-zA-Z0-9_]+)/g);
     return parts.map((part, i) => {
@@ -179,7 +190,7 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
               </span>
             </div>
             {user?.handle === post.author_handle && (
-              <button onClick={handleDelete}
+              <button onClick={handleDelete} title="Delete post"
                 className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0">
                 <MoreHorizontal size={16} />
               </button>
@@ -200,7 +211,7 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
                 <span className="text-xs text-blue-500 font-medium flex items-center gap-1">
                   <Globe size={10} /> Translated
                 </span>
-                <button onClick={() => setTranslated(null)} className="text-blue-400 hover:text-blue-600">
+                <button onClick={e => { e.preventDefault(); setTranslated(null); }} className="text-blue-400 hover:text-blue-600">
                   <X size={12} />
                 </button>
               </div>
@@ -212,7 +223,7 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
           {showLangPicker && (
             <div className="flex flex-wrap gap-1.5 mb-2">
               {LANGS.map(l => (
-                <button key={l.code} onClick={() => handleTranslate(l.code)}
+                <button key={l.code} onClick={e => { e.preventDefault(); handleTranslate(l.code); }}
                   className="text-xs bg-gray-100 dark:bg-gray-800 hover:bg-brand hover:text-white text-gray-700 dark:text-gray-300 px-2.5 py-1 rounded-full transition-colors">
                   {l.label}
                 </button>
@@ -233,20 +244,23 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
           {/* Actions */}
           <div className="flex items-center justify-between mt-1 -ml-2 max-w-xs">
             <ActionBtn icon={MessageCircle} count={post.replies_count}
-              onClick={e => e.preventDefault()} />
+              title="Reply" onClick={e => e.preventDefault()} />
             <ActionBtn icon={Repeat2} count={repostsCount} active={reposted}
-              activeColor="text-green-500" onClick={handleRepost} />
+              activeColor="text-green-500" title="Repost" onClick={handleRepost} />
             <ActionBtn icon={Heart} count={likesCount} active={liked}
-              activeColor="text-pink-500" onClick={handleLike} />
+              activeColor="text-pink-500" title="Like" onClick={handleLike} />
             <ActionBtn icon={Bookmark} count={0} active={bookmarked}
-              activeColor="text-brand" onClick={handleBookmark} showCount={false} />
-            <button onClick={e => { e.preventDefault(); setShowLangPicker(s => !s); setTranslated(null); }}
-              className={`p-2 rounded-full transition-colors ${showLangPicker ? 'text-brand bg-blue-50 dark:bg-blue-900/20' : 'text-gray-400 hover:text-brand hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}
-              title="Translate">
+              activeColor="text-brand" title="Bookmark" onClick={handleBookmark} showCount={false} />
+            <button
+              onClick={e => { e.preventDefault(); setShowLangPicker(s => !s); setTranslated(null); }}
+              title="Translate"
+              className={`p-2 rounded-full transition-colors ${showLangPicker ? 'text-brand bg-blue-50 dark:bg-blue-900/20' : 'text-gray-500 hover:text-brand hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}>
               {translating ? <span className="text-xs">…</span> : <Globe size={16} />}
             </button>
-            <button onClick={e => e.preventDefault()}
-              className="p-2 rounded-full text-gray-400 hover:text-brand hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+            <button
+              onClick={handleShare}
+              title="Share"
+              className="p-2 rounded-full text-gray-500 hover:text-brand hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
               <Share size={16} />
             </button>
           </div>
@@ -256,12 +270,12 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
   );
 }
 
-function ActionBtn({ icon: Icon, count, active, activeColor, onClick, showCount = true }: {
-  icon: any; count: number; active?: boolean; activeColor?: string;
+function ActionBtn({ icon: Icon, count, active, activeColor, onClick, showCount = true, title }: {
+  icon: any; count: number; active?: boolean; activeColor?: string; title?: string;
   onClick: (e: React.MouseEvent) => void; showCount?: boolean;
 }) {
   return (
-    <button onClick={onClick}
+    <button onClick={onClick} title={title}
       className={clsx(
         'flex items-center gap-1.5 p-2 rounded-full transition-colors text-sm',
         active ? activeColor : 'text-gray-500',
