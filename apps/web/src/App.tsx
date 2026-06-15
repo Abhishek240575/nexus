@@ -72,11 +72,11 @@ export default function App() {
               <Route path="/notifications"      element={<Notifications />} />
               <Route path="/messages"           element={<Messages />} />
               <Route path="/messages/:id"       element={<Messages />} />
-              <Route path="/:handle"            element={<Profile />} />
-              <Route path="/:handle/post/:id"   element={<PostDetail />} />
-              <Route path="/bookmarks"            element={<Bookmarks />} />
               <Route path="/communities/:slug"  element={<Communities />} />
               <Route path="/communities/:slug/mod" element={<CommunityMod />} />
+              <Route path="/:handle"            element={<Profile />} />
+              <Route path="/:handle/post/:id"   element={<PostDetail />} />
+              <Route path="/bookmarks"            element={<Bookmarks />} />              
               <Route path="/spaces"             element={<Spaces />} />
               <Route path="/spaces/:id"         element={<Spaces />} />
               <Route path="/debates"            element={<Debates />} />
