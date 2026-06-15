@@ -54,8 +54,8 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             [
               email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '_'),
               email,
-              profile.displayName,
-              profile.photos?.[0]?.value,
+              (profile as any).displayName,
+              (profile as any).photos?.[0]?.value,
             ]
           );
 
