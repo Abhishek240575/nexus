@@ -18,6 +18,7 @@ import communitiesRoutes   from './routes/communities.routes';
 import analyticsRoutes     from './routes/analytics.routes';
 import moderationRoutes    from './routes/moderation.routes';
 import debatesRoutes       from './routes/debates.routes';
+import spacesRoutes        from './routes/spaces.routes';
 
 const app = express();
 
@@ -53,6 +54,7 @@ app.use('/api/communities',   communitiesRoutes);
 app.use('/api/analytics',     analyticsRoutes);
 app.use('/api/moderation',    moderationRoutes);
 app.use('/api/debates',       debatesRoutes);
+app.use('/api/spaces',        spacesRoutes);
 
 // ─── Error handling ───────────────────────────────────────────────────────────
 app.use(notFoundHandler);
