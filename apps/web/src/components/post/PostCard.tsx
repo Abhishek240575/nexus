@@ -1,10 +1,11 @@
 import { useState }        from 'react';
 import { Link }            from 'react-router-dom';
-import { Heart, Repeat2, MessageCircle, Bookmark, Share, MoreHorizontal } from 'lucide-react';
+import { Heart, Repeat2, MessageCircle, Bookmark, Share, MoreHorizontal, Globe, X } from 'lucide-react';
 import { postsService }    from '@/services/posts.service';
 import { useAuthStore }    from '@/stores/auth.store';
 import { formatDistanceToNowStrict } from 'date-fns';
 import clsx from 'clsx';
+import { api } from '@/services/api.client';
 
 interface Post {
   id:             string;
@@ -40,6 +41,35 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
   const [bookmarked,   setBookmarked]   = useState(post.is_bookmarked  ?? false);
   const [likesCount,   setLikesCount]   = useState(post.likes_count);
   const [repostsCount, setRepostsCount] = useState(post.reposts_count);
+  const [translated,   setTranslated]   = useState<string | null>(null);
+  const [translating,  setTranslating]  = useState(false);
+  const [showLangPicker, setShowLangPicker] = useState(false);
+
+  const LANGS = [
+    { code: 'hi', label: 'हिंदी' },
+    { code: 'en', label: 'English' },
+    { code: 'ta', label: 'தமிழ்' },
+    { code: 'te', label: 'తెలుగు' },
+    { code: 'bn', label: 'বাংলা' },
+    { code: 'mr', label: 'मराठी' },
+    { code: 'gu', label: 'ગુજરાતી' },
+    { code: 'kn', label: 'ಕನ್ನಡ' },
+    { code: 'ml', label: 'മലയാളം' },
+  ];
+
+  const handleTranslate = async (langCode: string) => {
+    setShowLangPicker(false);
+    if (translating) return;
+    setTranslating(true);
+    try {
+      const res = await api.get(`/api/translate/post/${post.id}`, { params: { target: langCode } });
+      setTranslated(res.data?.data?.translated || null);
+    } catch {
+      setTranslated('Translation failed. Please try again.');
+    } finally {
+      setTranslating(false);
+    }
+  };
 
   const avatarUrl = post.author_avatar ||
     `https://ui-avatars.com/api/?name=${post.author_handle}&background=1d9bf0&color=fff&size=40`;
@@ -163,6 +193,33 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
             </p>
           )}
 
+          {/* Translation */}
+          {translated && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl px-3 py-2 mb-2">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-blue-500 font-medium flex items-center gap-1">
+                  <Globe size={10} /> Translated
+                </span>
+                <button onClick={() => setTranslated(null)} className="text-blue-400 hover:text-blue-600">
+                  <X size={12} />
+                </button>
+              </div>
+              <p className="text-sm text-gray-900 dark:text-white leading-relaxed">{translated}</p>
+            </div>
+          )}
+
+          {/* Language picker */}
+          {showLangPicker && (
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {LANGS.map(l => (
+                <button key={l.code} onClick={() => handleTranslate(l.code)}
+                  className="text-xs bg-gray-100 dark:bg-gray-800 hover:bg-brand hover:text-white text-gray-700 dark:text-gray-300 px-2.5 py-1 rounded-full transition-colors">
+                  {l.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Media */}
           {post.media_urls?.length > 0 && (
             <div className={clsx('grid gap-1 mb-2 rounded-xl overflow-hidden',
@@ -183,6 +240,11 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
               activeColor="text-pink-500" onClick={handleLike} />
             <ActionBtn icon={Bookmark} count={0} active={bookmarked}
               activeColor="text-brand" onClick={handleBookmark} showCount={false} />
+            <button onClick={e => { e.preventDefault(); setShowLangPicker(s => !s); setTranslated(null); }}
+              className={`p-2 rounded-full transition-colors ${showLangPicker ? 'text-brand bg-blue-50 dark:bg-blue-900/20' : 'text-gray-400 hover:text-brand hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}
+              title="Translate">
+              {translating ? <span className="text-xs">…</span> : <Globe size={16} />}
+            </button>
             <button onClick={e => e.preventDefault()}
               className="p-2 rounded-full text-gray-400 hover:text-brand hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
               <Share size={16} />
