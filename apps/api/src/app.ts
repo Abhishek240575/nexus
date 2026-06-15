@@ -17,11 +17,12 @@ import messagesRoutes      from './routes/messages.routes';
 import communitiesRoutes   from './routes/communities.routes';
 import analyticsRoutes     from './routes/analytics.routes';
 import moderationRoutes    from './routes/moderation.routes';
+import debatesRoutes       from './routes/debates.routes';
 
 const app = express();
 
 // ─── Security & parsing ───────────────────────────────────────────────────────
-app.set('trust proxy', 1);
+app.use(helmet());
 app.use(cors({
   origin:      process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true,
@@ -51,6 +52,7 @@ app.use('/api/messages',      messagesRoutes);
 app.use('/api/communities',   communitiesRoutes);
 app.use('/api/analytics',     analyticsRoutes);
 app.use('/api/moderation',    moderationRoutes);
+app.use('/api/debates',       debatesRoutes);
 
 // ─── Error handling ───────────────────────────────────────────────────────────
 app.use(notFoundHandler);

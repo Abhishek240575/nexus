@@ -1,6 +1,6 @@
 import { NavLink, useNavigate }    from 'react-router-dom';
 import { Home, Search, Bell, Mail, Bookmark, User,
-         BarChart2, Users, Radio, Settings, LogOut } from 'lucide-react';
+         BarChart2, Users, Radio, Settings, LogOut, Swords } from 'lucide-react';
 import { useAuthStore }   from '@/stores/auth.store';
 import { authService }    from '@/services/auth.service';
 import { disconnectSocket } from '@/services/socket';
@@ -32,6 +32,7 @@ export default function Sidebar() {
     { to: '/messages',      icon: Mail,      label: 'Messages'      },
     { to: '/bookmarks',     icon: Bookmark,  label: 'Bookmarks'     },
     { to: '/communities',   icon: Users,     label: 'Communities'   },
+    { to: '/debates',       icon: Swords,    label: 'Debates'       },
     { to: '/spaces',        icon: Radio,     label: 'Spaces'        },
     { to: '/analytics',     icon: BarChart2, label: 'Analytics'     },
     { to: `/${user?.handle}`, icon: User,    label: 'Profile'       },

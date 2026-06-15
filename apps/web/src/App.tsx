@@ -1,8 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider }        from '@tanstack/react-query';
-import { ReactQueryDevtools as QueryDevtools } from '@tanstack/react-query-devtools';
+import { QueryDevtools } from '@tanstack/react-query-devtools';
 import { useAuthStore }  from '@/stores/auth.store';
-
 
 // Layouts
 import AppLayout   from '@/components/layout/AppLayout';
@@ -10,7 +9,6 @@ import AuthLayout  from '@/components/layout/AuthLayout';
 
 // Pages — lazy loaded
 import { lazy, Suspense } from 'react';
-const Analytics    = lazy(() => import('@/pages/Analytics'));
 const Home          = lazy(() => import('@/pages/Home'));
 const Explore       = lazy(() => import('@/pages/Explore'));
 const Notifications = lazy(() => import('@/pages/Notifications'));
@@ -19,6 +17,7 @@ const Profile       = lazy(() => import('@/pages/Profile'));
 const PostDetail    = lazy(() => import('@/pages/PostDetail'));
 const Communities   = lazy(() => import('@/pages/Communities'));
 const Spaces        = lazy(() => import('@/pages/Spaces'));
+const Debates       = lazy(() => import('@/pages/Debates'));
 const Bookmarks    = lazy(() => import('@/pages/Bookmarks'));
 const Settings      = lazy(() => import('@/pages/Settings'));
 const ModerationPanel = lazy(() => import('@/pages/ModerationPanel'));
@@ -75,6 +74,8 @@ export default function App() {
               <Route path="/bookmarks"            element={<Bookmarks />} />
               <Route path="/communities/:slug"  element={<Communities />} />
               <Route path="/spaces"             element={<Spaces />} />
+              <Route path="/debates"            element={<Debates />} />
+              <Route path="/debates/:id"        element={<Debates />} />
               <Route path="/analytics"          element={<Analytics />} />
               <Route path="/moderation"         element={<ModerationPanel />} />
               <Route path="/settings"           element={<Settings />} />
