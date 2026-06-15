@@ -16,6 +16,7 @@ import notificationsRoutes from './routes/notifications.routes';
 import messagesRoutes      from './routes/messages.routes';
 import communitiesRoutes   from './routes/communities.routes';
 import analyticsRoutes     from './routes/analytics.routes';
+import moderationRoutes    from './routes/moderation.routes';
 
 const app = express();
 
@@ -49,6 +50,7 @@ app.use('/api/notifications', notificationsRoutes);
 app.use('/api/messages',      messagesRoutes);
 app.use('/api/communities',   communitiesRoutes);
 app.use('/api/analytics',     analyticsRoutes);
+app.use('/api/moderation',    moderationRoutes);
 
 // ─── Error handling ───────────────────────────────────────────────────────────
 app.use(notFoundHandler);

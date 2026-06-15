@@ -3,6 +3,7 @@ import { db }    from '../config/db';
 import { redis } from '../config/redis';
 import * as R    from '../utils/response';
 import { AuthenticatedRequest } from '../types';
+import { moderateContent, detectLanguage } from '../services/moderation.service';
 
 const extractHashtags = (content: string): string[] => {
   const matches = content.match(/#([a-zA-Z0-9_]+)/g) || [];
@@ -63,6 +64,49 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
   );
 
   const post = rows[0];
+
+  // ─── AI Content Moderation ────────────────────────────────────────────────
+  if (content && process.env.ANTHROPIC_API_KEY) {
+    try {
+      const language   = await detectLanguage(content);
+      const modResult  = await moderateContent(content, language);
+
+      if (modResult.decision === 'BLOCK') {
+        // Delete the post immediately
+        await db.query('DELETE FROM posts WHERE id = $1', [post.id]);
+        R.badRequest(res, `Post blocked: ${modResult.reason}. ${modResult.suggestion || ''}`);
+        return;
+      }
+
+      if (modResult.decision === 'FLAG') {
+        // Hold for human review — unpublish
+        await db.query('UPDATE posts SET is_published = FALSE WHERE id = $1', [post.id]);
+        // Add to moderation queue
+        await db.query(
+          `INSERT INTO moderation_queue (post_id, ai_decision, ai_reason, ai_categories, ai_confidence)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [post.id, modResult.decision, modResult.reason, modResult.categories, modResult.confidence]
+        );
+        R.created(res, { ...post, moderation_status: 'under_review', message: 'Your post is under review and will be published once approved.' });
+        return;
+      }
+
+      if (modResult.decision === 'WARN') {
+        // Publish with content warning
+        await db.query('UPDATE posts SET has_warning = TRUE, warning_reason = $1 WHERE id = $2', [modResult.reason, post.id]);
+        post.has_warning     = true;
+        post.warning_reason  = modResult.reason;
+      }
+
+      // Store language
+      await db.query('UPDATE posts SET language = $1 WHERE id = $2', [language, post.id]);
+      post.language = language;
+
+    } catch (err) {
+      console.error('[Moderation] Failed:', err);
+      // Continue publishing if moderation fails
+    }
+  }
   await db.query('UPDATE users SET posts_count = posts_count + 1 WHERE id = $1', [userId]);
 
   if (content) {
