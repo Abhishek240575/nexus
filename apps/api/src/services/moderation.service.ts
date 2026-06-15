@@ -48,10 +48,10 @@ Analyze this post and respond ONLY with a JSON object in this exact format:
 }
 
 Decision meanings:
-- PASS: Safe to publish immediately
-- WARN: Publish with a content warning label (sensitive but legal)
-- FLAG: Hold for human review before publishing
-- BLOCK: Reject immediately, do not publish
+- PASS: Safe to publish immediately. Use this for ALL political opinions, criticism, social commentary, activism, debate, satire, and general discussion even if controversial
+- WARN: Publish with a content warning label. Use ONLY for graphic descriptions of violence or very explicit content that is still legal
+- FLAG: Hold for human review. Use ONLY when you are highly confident (>90%) of serious violations like direct incitement to violence or illegal content
+- BLOCK: Reject immediately. Use ONLY for clear hate speech with slurs, direct threats against specific people, or child exploitation content
 
 Post to analyze:
 """
