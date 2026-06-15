@@ -101,6 +101,31 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
     });
   }
 
+  await db.query('UPDATE users SET posts_count = posts_count + 1 WHERE id = $1', [userId]);
+
+  if (content) {
+    const tags = extractHashtags(content);
+    if (tags.length > 0) await linkHashtags(post.id, tags);
+  }
+
+  if (reply_to_id) {
+    const { rows: parent } = await db.query('SELECT user_id FROM posts WHERE id = $1', [reply_to_id]);
+    if (parent[0]) await createNotification({ user_id: parent[0].user_id, type: 'reply', actor_id: userId, post_id: reply_to_id });
+  }
+
+  await redis.del(`feed:${userId}`);
+
+  const { rows: enriched } = await db.query(
+    `SELECT p.*, u.handle AS author_handle, u.display_name AS author_name,
+            u.avatar_url AS author_avatar, u.verified AS author_verified,
+            u.premium_tier AS author_tier
+     FROM posts p JOIN users u ON u.id = p.user_id WHERE p.id = $1`,
+    [post.id]
+  );
+
+  R.created(res, enriched[0]);
+};
+
 export const getPost = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const userId = (req as any).user?.id || null;
