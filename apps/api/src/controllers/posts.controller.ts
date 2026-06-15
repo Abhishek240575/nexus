@@ -65,73 +65,41 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
 
   const post = rows[0];
 
-  // ─── AI Content Moderation ────────────────────────────────────────────────
+// ─── AI Content Moderation (async — does not block publishing) ───────────
   if (content && process.env.ANTHROPIC_API_KEY) {
-    try {
-      const language   = await detectLanguage(content);
-      const modResult  = await moderateContent(content, language);
+    setImmediate(async () => {
+      try {
+        const language  = await detectLanguage(content);
+        const modResult = await moderateContent(content, language);
 
-      if (modResult.decision === 'BLOCK') {
-        // Delete the post immediately
-        await db.query('DELETE FROM posts WHERE id = $1', [post.id]);
-        R.badRequest(res, `Post blocked: ${modResult.reason}. ${modResult.suggestion || ''}`);
-        return;
+        await db.query('UPDATE posts SET language = $1 WHERE id = $2', [language, post.id]);
+
+        if (modResult.decision === 'BLOCK') {
+          // Unpublish and notify user
+          await db.query('UPDATE posts SET is_published = FALSE WHERE id = $1', [post.id]);
+          await db.query(
+            `INSERT INTO notifications (user_id, type, actor_id)
+             VALUES ($1, 'system', $1)`,
+            [userId]
+          );
+        } else if (modResult.decision === 'FLAG') {
+          await db.query('UPDATE posts SET is_published = FALSE WHERE id = $1', [post.id]);
+          await db.query(
+            `INSERT INTO moderation_queue (post_id, ai_decision, ai_reason, ai_categories, ai_confidence)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [post.id, modResult.decision, modResult.reason, modResult.categories, modResult.confidence]
+          );
+        } else if (modResult.decision === 'WARN') {
+          await db.query(
+            'UPDATE posts SET has_warning = TRUE, warning_reason = $1 WHERE id = $2',
+            [modResult.reason, post.id]
+          );
+        }
+      } catch (err) {
+        console.error('[Moderation] Background check failed:', err);
       }
-
-      if (modResult.decision === 'FLAG') {
-        // Hold for human review — unpublish
-        await db.query('UPDATE posts SET is_published = FALSE WHERE id = $1', [post.id]);
-        // Add to moderation queue
-        await db.query(
-          `INSERT INTO moderation_queue (post_id, ai_decision, ai_reason, ai_categories, ai_confidence)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [post.id, modResult.decision, modResult.reason, modResult.categories, modResult.confidence]
-        );
-        R.created(res, { ...post, moderation_status: 'under_review', message: 'Your post is under review and will be published once approved.' });
-        return;
-      }
-
-      if (modResult.decision === 'WARN') {
-        // Publish with content warning
-        await db.query('UPDATE posts SET has_warning = TRUE, warning_reason = $1 WHERE id = $2', [modResult.reason, post.id]);
-        post.has_warning     = true;
-        post.warning_reason  = modResult.reason;
-      }
-
-      // Store language
-      await db.query('UPDATE posts SET language = $1 WHERE id = $2', [language, post.id]);
-      post.language = language;
-
-    } catch (err) {
-      console.error('[Moderation] Failed:', err);
-      // Continue publishing if moderation fails
-    }
+    });
   }
-  await db.query('UPDATE users SET posts_count = posts_count + 1 WHERE id = $1', [userId]);
-
-  if (content) {
-    const tags = extractHashtags(content);
-    if (tags.length > 0) await linkHashtags(post.id, tags);
-  }
-
-  // Notify post owner of reply
-  if (reply_to_id) {
-    const { rows: parent } = await db.query('SELECT user_id FROM posts WHERE id = $1', [reply_to_id]);
-    if (parent[0]) await createNotification({ user_id: parent[0].user_id, type: 'reply', actor_id: userId, post_id: reply_to_id });
-  }
-
-  await redis.del(`feed:${userId}`);
-
-  const { rows: enriched } = await db.query(
-    `SELECT p.*, u.handle AS author_handle, u.display_name AS author_name,
-            u.avatar_url AS author_avatar, u.verified AS author_verified,
-            u.premium_tier AS author_tier
-     FROM posts p JOIN users u ON u.id = p.user_id WHERE p.id = $1`,
-    [post.id]
-  );
-
-  R.created(res, enriched[0]);
-};
 
 export const getPost = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
