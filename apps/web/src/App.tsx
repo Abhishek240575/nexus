@@ -18,9 +18,13 @@ const PostDetail    = lazy(() => import('@/pages/PostDetail'));
 const Communities   = lazy(() => import('@/pages/Communities'));
 const Spaces        = lazy(() => import('@/pages/Spaces'));
 const Debates       = lazy(() => import('@/pages/Debates'));
-const Analytics    = lazy(() => import('@/pages/Analytics'));
 const Trending      = lazy(() => import('@/pages/Trending'));
-const CommunityMod  = lazy(() => import('@/pages/CommunityMod'));
+const CommunityMod       = lazy(() => import('@/pages/CommunityMod'));
+const Legal              = lazy(() => import('@/pages/Legal'));
+const TermsOfService     = lazy(() => import('@/pages/Legal').then(m => ({ default: m.TermsOfService })));
+const PrivacyPolicy      = lazy(() => import('@/pages/Legal').then(m => ({ default: m.PrivacyPolicy })));
+const GrievanceOfficer   = lazy(() => import('@/pages/Legal').then(m => ({ default: m.GrievanceOfficer })));
+const CommunityGuidelines = lazy(() => import('@/pages/Legal').then(m => ({ default: m.CommunityGuidelines })));
 const Bookmarks    = lazy(() => import('@/pages/Bookmarks'));
 const Settings      = lazy(() => import('@/pages/Settings'));
 const ModerationPanel = lazy(() => import('@/pages/ModerationPanel'));
@@ -72,13 +76,11 @@ export default function App() {
               <Route path="/notifications"      element={<Notifications />} />
               <Route path="/messages"           element={<Messages />} />
               <Route path="/messages/:id"       element={<Messages />} />
-              <Route path="/communities"           element={<Communities />} />
-              <Route path="/communities/:slug"     element={<Communities />} />
-              <Route path="/communities/:slug/mod" element={<CommunityMod />} />
-              <Route path="/:handle"              element={<Profile />} />
               <Route path="/:handle"            element={<Profile />} />
               <Route path="/:handle/post/:id"   element={<PostDetail />} />
-              <Route path="/bookmarks"            element={<Bookmarks />} />              
+              <Route path="/bookmarks"            element={<Bookmarks />} />
+              <Route path="/communities/:slug"  element={<Communities />} />
+              <Route path="/communities/:slug/mod" element={<CommunityMod />} />
               <Route path="/spaces"             element={<Spaces />} />
               <Route path="/spaces/:id"         element={<Spaces />} />
               <Route path="/debates"            element={<Debates />} />
@@ -87,6 +89,11 @@ export default function App() {
               <Route path="/trending"           element={<Trending />} />
               <Route path="/moderation"         element={<ModerationPanel />} />
               <Route path="/settings"           element={<Settings />} />
+              <Route path="/legal"              element={<Legal />} />
+              <Route path="/terms"              element={<TermsOfService />} />
+              <Route path="/privacy"            element={<PrivacyPolicy />} />
+              <Route path="/grievance"          element={<GrievanceOfficer />} />
+              <Route path="/guidelines"         element={<CommunityGuidelines />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

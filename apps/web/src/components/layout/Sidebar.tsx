@@ -92,6 +92,9 @@ export default function Sidebar() {
           </button>
         </div>
       )}
+      <NavLink to="/legal" className="px-3 py-1 text-xs text-gray-400 hover:text-brand transition-colors block">
+        Legal & Compliance
+      </NavLink>
     </div>
   );
 }
