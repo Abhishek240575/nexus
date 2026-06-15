@@ -19,6 +19,7 @@ const Communities   = lazy(() => import('@/pages/Communities'));
 const Spaces        = lazy(() => import('@/pages/Spaces'));
 const Debates       = lazy(() => import('@/pages/Debates'));
 const Trending      = lazy(() => import('@/pages/Trending'));
+const Analytics    = lazy(() => import('@/pages/Analytics'));
 const CommunityMod       = lazy(() => import('@/pages/CommunityMod'));
 const Legal              = lazy(() => import('@/pages/Legal'));
 const TermsOfService     = lazy(() => import('@/pages/Legal').then(m => ({ default: m.TermsOfService })));
