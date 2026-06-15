@@ -63,8 +63,7 @@ function SpaceRoom({ space, token, role, onLeave }: {
         }
         // On network hiccup or token expiry — don't close, LiveKit will reconnect
       }}
-      options={{ reconnectPolicy: { maxRetries: 5 } }}
-    >
+      >
       <RoomAudioRenderer />
       <div className="flex flex-col h-screen max-h-screen bg-gray-950">
         {/* Header */}
