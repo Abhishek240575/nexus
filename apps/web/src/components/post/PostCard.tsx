@@ -1,6 +1,6 @@
-import { useState }        from 'react';
+import { useState, useRef, useEffect }        from 'react';
 import { Link }            from 'react-router-dom';
-import { Heart, Repeat2, MessageCircle, Bookmark, Share, MoreHorizontal, Globe, X } from 'lucide-react';
+import { Heart, Repeat2, MessageCircle, Bookmark, Share, MoreHorizontal, Globe, X, UserPlus, VolumeX, Ban, Flag, Code, ThumbsDown } from 'lucide-react';
 import { postsService }    from '@/services/posts.service';
 import { useAuthStore }    from '@/stores/auth.store';
 import { formatDistanceToNowStrict } from 'date-fns';
@@ -44,6 +44,16 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
   const [translated,   setTranslated]   = useState<string | null>(null);
   const [translating,  setTranslating]  = useState(false);
   const [showLangPicker, setShowLangPicker] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [menuMsg, setMenuMsg]   = useState('');
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false);
+    };
+    if (showMenu) document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showMenu]);
 
   const LANGS = [
     { code: 'hi', label: 'हिंदी' },
@@ -189,12 +199,24 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
                 {formatDistanceToNowStrict(new Date(post.created_at), { addSuffix: false })}
               </span>
             </div>
-            {user?.handle === post.author_handle && (
-              <button onClick={handleDelete} title="Delete post"
-                className="text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex-shrink-0">
+            <div className="relative flex-shrink-0" ref={menuRef}>
+              <button onClick={e => { e.preventDefault(); setShowMenu(s => !s); }}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                 <MoreHorizontal size={16} />
               </button>
-            )}
+              {showMenu && (
+                <div className="absolute right-0 top-6 z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl w-56 py-1">
+                  <button onClick={e => { e.preventDefault(); setShowMenu(false); setMenuMsg("Got it!"); setTimeout(()=>setMenuMsg(''),2000); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800"><ThumbsDown size={15} /> Not interested</button>
+                  {user?.handle !== post.author_handle && <button onClick={e => { e.preventDefault(); setShowMenu(false); api.post(`/api/users/${post.author_handle}/follow`).then(()=>setMenuMsg(`Following @${post.author_handle}`)); setTimeout(()=>setMenuMsg(''),2000); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800"><UserPlus size={15} /> Follow @{post.author_handle}</button>}
+                  {user?.handle !== post.author_handle && <button onClick={e => { e.preventDefault(); setShowMenu(false); setMenuMsg(`@${post.author_handle} muted`); setTimeout(()=>setMenuMsg(''),2000); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800"><VolumeX size={15} /> Mute @{post.author_handle}</button>}
+                  <div className="border-t border-gray-100 dark:border-gray-800 my-1" />
+                  {user?.handle !== post.author_handle && <button onClick={e => { e.preventDefault(); setShowMenu(false); if(confirm(`Block @${post.author_handle}?`)){api.post(`/api/users/${post.author_handle}/block`);setMenuMsg(`Blocked @${post.author_handle}`);setTimeout(()=>setMenuMsg(''),2000);} }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-gray-50 dark:hover:bg-gray-800"><Ban size={15} /> Block @{post.author_handle}</button>}
+                  <button onClick={e => { e.preventDefault(); setShowMenu(false); setMenuMsg('Report submitted'); setTimeout(()=>setMenuMsg(''),2000); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-gray-50 dark:hover:bg-gray-800"><Flag size={15} /> Report post</button>
+                  <button onClick={e => { e.preventDefault(); setShowMenu(false); navigator.clipboard.writeText(`<a href="${window.location.origin}/${post.author_handle}/post/${post.id}">@${post.author_handle} on Nexus</a>`); setMenuMsg('Embed copied!'); setTimeout(()=>setMenuMsg(''),2000); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800"><Code size={15} /> Embed post</button>
+                  {user?.handle === post.author_handle && <><div className="border-t border-gray-100 dark:border-gray-800 my-1" /><button onClick={handleDelete} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-gray-50 dark:hover:bg-gray-800"><X size={15} /> Delete post</button></>}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Post text */}
@@ -231,6 +253,7 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
             </div>
           )}
 
+          {menuMsg && <div className="bg-gray-900 text-white text-xs px-3 py-1.5 rounded-full mb-2 inline-block">{menuMsg}</div>}
           {/* Media */}
           {post.media_urls?.length > 0 && (
             <div className={clsx('grid gap-1 mb-2 rounded-xl overflow-hidden',
