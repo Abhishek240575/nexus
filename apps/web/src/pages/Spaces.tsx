@@ -290,13 +290,21 @@ export default function Spaces() {
   const createMutation = useMutation({
     mutationFn: (data: any) => spacesService.create(data),
     onSuccess:  (res: any) => {
-      const { token, ...space } = res.data.data;
-      setRoomToken(token);
-      setActiveSpace(space);
-      setMyRole('host');
-      queryClient.invalidateQueries({ queryKey: ['spaces'] });
-      setShowCreate(false);
-    },
+    console.log('[Spaces] Create response:', res.data);
+    const data = res.data?.data || res.data;
+    const token = data.token;
+    const { token: _t, livekit_url: _l, ...space } = data;
+    console.log('[Spaces] Token:', token, 'Space:', space);
+    if (!token) {
+      console.error('[Spaces] No token received!');
+      return;
+    }
+    setRoomToken(token);
+    setActiveSpace(space);
+    setMyRole('host');
+    queryClient.invalidateQueries({ queryKey: ['spaces'] });
+    setShowCreate(false);
+  },
   });
 
   if (id) return <SpaceDetail id={id} />;
