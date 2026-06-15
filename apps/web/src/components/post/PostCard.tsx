@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect }        from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link }            from 'react-router-dom';
-import { Heart, Repeat2, MessageCircle, Bookmark, Share, MoreHorizontal, Globe, X, UserPlus, VolumeX, Ban, Flag, Code, ThumbsDown } from 'lucide-react';
+import { Heart, Repeat2, MessageCircle, Bookmark, Share, MoreHorizontal, Globe, X,
+         UserPlus, VolumeX, Ban, Flag, Code, ThumbsDown, BarChart2, Eye } from 'lucide-react';
 import { postsService }    from '@/services/posts.service';
 import { useAuthStore }    from '@/stores/auth.store';
 import { formatDistanceToNowStrict } from 'date-fns';
@@ -47,9 +48,15 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
   const [showMenu, setShowMenu] = useState(false);
   const [menuMsg, setMenuMsg]   = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
+  const [showActivity, setShowActivity] = useState(false);
+  const [activity,     setActivity]     = useState<any>(null);
+
+  // Close menu on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false);
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
     };
     if (showMenu) document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -130,6 +137,57 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
       await postsService.deletePost(post.id);
       onDelete?.(post.id);
     } catch {}
+    setShowMenu(false);
+  };
+
+  const handleMenuAction = async (e: React.MouseEvent, action: string) => {
+    e.preventDefault();
+    setShowMenu(false);
+    switch (action) {
+      case 'not_interested':
+        setMenuMsg("Got it — we'll show fewer posts like this");
+        setTimeout(() => setMenuMsg(''), 3000);
+        break;
+      case 'follow':
+        try {
+          await api.post(`/api/users/${post.author_handle}/follow`);
+          setMenuMsg(`Following @${post.author_handle}`);
+        } catch { setMenuMsg('Failed to follow'); }
+        setTimeout(() => setMenuMsg(''), 3000);
+        break;
+      case 'mute':
+        setMenuMsg(`@${post.author_handle} muted`);
+        setTimeout(() => setMenuMsg(''), 3000);
+        break;
+      case 'block':
+        if (confirm(`Block @${post.author_handle}?`)) {
+          try {
+            await api.post(`/api/users/${post.author_handle}/block`);
+            setMenuMsg(`@${post.author_handle} blocked`);
+          } catch { setMenuMsg('Failed to block'); }
+          setTimeout(() => setMenuMsg(''), 3000);
+        }
+        break;
+      case 'report':
+        setMenuMsg('Report submitted — thank you');
+        setTimeout(() => setMenuMsg(''), 3000);
+        break;
+      case 'embed': {
+        const embedCode = `<blockquote class="nexus-post"><a href="${window.location.origin}/${post.author_handle}/post/${post.id}">@${post.author_handle}: ${post.content?.slice(0, 100)}</a></blockquote>`;
+        await navigator.clipboard.writeText(embedCode);
+        setMenuMsg('Embed code copied!');
+        setTimeout(() => setMenuMsg(''), 3000);
+        break;
+      }
+      case 'activity': {
+        try {
+          const res = await api.get(`/api/lists/activity/${post.id}`);
+          setActivity(res.data?.data);
+          setShowActivity(true);
+        } catch { setMenuMsg('Could not load activity'); setTimeout(() => setMenuMsg(''), 2000); }
+        break;
+      }
+    }
   };
 
   const handleShare = async (e: React.MouseEvent) => {
@@ -205,15 +263,27 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
                 <MoreHorizontal size={16} />
               </button>
               {showMenu && (
-                <div className="absolute right-0 top-6 z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl w-56 py-1">
-                  <button onClick={e => { e.preventDefault(); setShowMenu(false); setMenuMsg("Got it!"); setTimeout(()=>setMenuMsg(''),2000); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800"><ThumbsDown size={15} /> Not interested</button>
-                  {user?.handle !== post.author_handle && <button onClick={e => { e.preventDefault(); setShowMenu(false); api.post(`/api/users/${post.author_handle}/follow`).then(()=>setMenuMsg(`Following @${post.author_handle}`)); setTimeout(()=>setMenuMsg(''),2000); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800"><UserPlus size={15} /> Follow @{post.author_handle}</button>}
-                  {user?.handle !== post.author_handle && <button onClick={e => { e.preventDefault(); setShowMenu(false); setMenuMsg(`@${post.author_handle} muted`); setTimeout(()=>setMenuMsg(''),2000); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800"><VolumeX size={15} /> Mute @{post.author_handle}</button>}
+                <div className="absolute right-0 top-6 z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl w-56 py-1 overflow-hidden">
+                  <MenuItem icon={ThumbsDown} label="Not interested" onClick={e => handleMenuAction(e, 'not_interested')} />
+                  {user?.handle !== post.author_handle && (
+                    <MenuItem icon={UserPlus} label={`Follow @${post.author_handle}`} onClick={e => handleMenuAction(e, 'follow')} />
+                  )}
+                  {user?.handle !== post.author_handle && (
+                    <MenuItem icon={VolumeX} label={`Mute @${post.author_handle}`} onClick={e => handleMenuAction(e, 'mute')} />
+                  )}
+                  {user?.handle !== post.author_handle && (
+                    <MenuItem icon={Ban} label={`Block @${post.author_handle}`} onClick={e => handleMenuAction(e, 'block')} danger />
+                  )}
                   <div className="border-t border-gray-100 dark:border-gray-800 my-1" />
-                  {user?.handle !== post.author_handle && <button onClick={e => { e.preventDefault(); setShowMenu(false); if(confirm(`Block @${post.author_handle}?`)){api.post(`/api/users/${post.author_handle}/block`);setMenuMsg(`Blocked @${post.author_handle}`);setTimeout(()=>setMenuMsg(''),2000);} }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-gray-50 dark:hover:bg-gray-800"><Ban size={15} /> Block @{post.author_handle}</button>}
-                  <button onClick={e => { e.preventDefault(); setShowMenu(false); setMenuMsg('Report submitted'); setTimeout(()=>setMenuMsg(''),2000); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-gray-50 dark:hover:bg-gray-800"><Flag size={15} /> Report post</button>
-                  <button onClick={e => { e.preventDefault(); setShowMenu(false); navigator.clipboard.writeText(`<a href="${window.location.origin}/${post.author_handle}/post/${post.id}">@${post.author_handle} on Nexus</a>`); setMenuMsg('Embed copied!'); setTimeout(()=>setMenuMsg(''),2000); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800"><Code size={15} /> Embed post</button>
-                  {user?.handle === post.author_handle && <><div className="border-t border-gray-100 dark:border-gray-800 my-1" /><button onClick={handleDelete} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-gray-50 dark:hover:bg-gray-800"><X size={15} /> Delete post</button></>}
+                  <MenuItem icon={Flag} label="Report post" onClick={e => handleMenuAction(e, 'report')} danger />
+                  <MenuItem icon={Code} label="Embed post" onClick={e => handleMenuAction(e, 'embed')} />
+                  <MenuItem icon={BarChart2} label="View post activity" onClick={e => handleMenuAction(e, 'activity')} />
+                  {user?.handle === post.author_handle && (
+                    <>
+                      <div className="border-t border-gray-100 dark:border-gray-800 my-1" />
+                      <MenuItem icon={X} label="Delete post" onClick={handleDelete} danger />
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -253,7 +323,44 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
             </div>
           )}
 
-          {menuMsg && <div className="bg-gray-900 text-white text-xs px-3 py-1.5 rounded-full mb-2 inline-block">{menuMsg}</div>}
+          {/* Action feedback toast */}
+          {menuMsg && (
+            <div className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-xs px-3 py-1.5 rounded-full mb-2 inline-block">
+              {menuMsg}
+            </div>
+          )}
+
+          {/* Post activity modal */}
+          {showActivity && activity && (
+            <div className="border border-gray-200 dark:border-gray-700 rounded-2xl p-4 mb-2 bg-gray-50 dark:bg-gray-900/50"
+              onClick={e => e.preventDefault()}>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-1.5">
+                  <BarChart2 size={14} className="text-brand" /> Post Activity
+                </p>
+                <button onClick={e => { e.preventDefault(); setShowActivity(false); }} className="text-gray-400 hover:text-gray-600">
+                  <X size={14} />
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { icon: Eye,            label: 'Views',     value: activity.views },
+                  { icon: Heart,          label: 'Likes',     value: activity.likes },
+                  { icon: Repeat2,        label: 'Reposts',   value: activity.reposts },
+                  { icon: MessageCircle,  label: 'Replies',   value: activity.replies },
+                  { icon: Bookmark,       label: 'Bookmarks', value: activity.bookmarks },
+                  { icon: BarChart2,      label: 'Engage %',  value: `${activity.engagement_rate}%` },
+                ].map(({ icon: Icon, label, value }) => (
+                  <div key={label} className="text-center">
+                    <Icon size={14} className="text-brand mx-auto mb-1" />
+                    <p className="text-base font-bold text-gray-900 dark:text-white">{value}</p>
+                    <p className="text-xs text-gray-500">{label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Media */}
           {post.media_urls?.length > 0 && (
             <div className={clsx('grid gap-1 mb-2 rounded-xl overflow-hidden',
@@ -310,6 +417,20 @@ function ActionBtn({ icon: Icon, count, active, activeColor, onClick, showCount 
           {count >= 1000 ? `${(count / 1000).toFixed(1)}k` : count}
         </span>
       )}
+    </button>
+  );
+}
+
+function MenuItem({ icon: Icon, label, onClick, danger }: {
+  icon: any; label: string; onClick: (e: React.MouseEvent) => void; danger?: boolean;
+}) {
+  return (
+    <button onClick={onClick}
+      className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 ${
+        danger ? 'text-red-500 hover:text-red-600' : 'text-gray-900 dark:text-white'
+      }`}>
+      <Icon size={15} />
+      {label}
     </button>
   );
 }

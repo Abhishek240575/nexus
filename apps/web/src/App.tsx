@@ -1,13 +1,13 @@
-﻿import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider }        from '@tanstack/react-query';
-import { ReactQueryDevtools as QueryDevtools } from '@tanstack/react-query-devtools';
+import { QueryDevtools } from '@tanstack/react-query-devtools';
 import { useAuthStore }  from '@/stores/auth.store';
 
 // Layouts
 import AppLayout   from '@/components/layout/AppLayout';
 import AuthLayout  from '@/components/layout/AuthLayout';
 
-// Pages â€” lazy loaded
+// Pages — lazy loaded
 import { lazy, Suspense } from 'react';
 const Home          = lazy(() => import('@/pages/Home'));
 const Explore       = lazy(() => import('@/pages/Explore'));
@@ -19,8 +19,8 @@ const Communities   = lazy(() => import('@/pages/Communities'));
 const Spaces        = lazy(() => import('@/pages/Spaces'));
 const Debates       = lazy(() => import('@/pages/Debates'));
 const Trending      = lazy(() => import('@/pages/Trending'));
-const Analytics    = lazy(() => import('@/pages/Analytics'));
 const CommunityMod       = lazy(() => import('@/pages/CommunityMod'));
+const Lists              = lazy(() => import('@/pages/Lists'));
 const Legal              = lazy(() => import('@/pages/Legal'));
 const TermsOfService     = lazy(() => import('@/pages/Legal').then(m => ({ default: m.TermsOfService })));
 const PrivacyPolicy      = lazy(() => import('@/pages/Legal').then(m => ({ default: m.PrivacyPolicy })));
@@ -72,30 +72,31 @@ export default function App() {
 
             {/* App routes */}
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-              <Route index                         element={<Home />} />
-              <Route path="/explore"               element={<Explore />} />
-              <Route path="/notifications"         element={<Notifications />} />
-              <Route path="/messages"              element={<Messages />} />
-              <Route path="/messages/:id"          element={<Messages />} />
-              <Route path="/bookmarks"             element={<Bookmarks />} />
-              <Route path="/communities"           element={<Communities />} />
-              <Route path="/communities/:slug"     element={<Communities />} />
+              <Route index                      element={<Home />} />
+              <Route path="/explore"            element={<Explore />} />
+              <Route path="/notifications"      element={<Notifications />} />
+              <Route path="/messages"           element={<Messages />} />
+              <Route path="/messages/:id"       element={<Messages />} />
+              <Route path="/:handle"            element={<Profile />} />
+              <Route path="/:handle/post/:id"   element={<PostDetail />} />
+              <Route path="/bookmarks"            element={<Bookmarks />} />
+              <Route path="/lists"                element={<Lists />} />
+              <Route path="/lists/:id"            element={<Lists />} />
+              <Route path="/communities/:slug"  element={<Communities />} />
               <Route path="/communities/:slug/mod" element={<CommunityMod />} />
-              <Route path="/spaces"                element={<Spaces />} />
-              <Route path="/spaces/:id"            element={<Spaces />} />
-              <Route path="/debates"               element={<Debates />} />
-              <Route path="/debates/:id"           element={<Debates />} />
-              <Route path="/analytics"             element={<Analytics />} />
-              <Route path="/trending"              element={<Trending />} />
-              <Route path="/moderation"            element={<ModerationPanel />} />
-              <Route path="/settings"              element={<Settings />} />
-              <Route path="/legal"                 element={<Legal />} />
-              <Route path="/terms"                 element={<TermsOfService />} />
-              <Route path="/privacy"               element={<PrivacyPolicy />} />
-              <Route path="/grievance"             element={<GrievanceOfficer />} />
-              <Route path="/guidelines"            element={<CommunityGuidelines />} />
-              <Route path="/:handle"               element={<Profile />} />
-              <Route path="/:handle/post/:id"      element={<PostDetail />} />
+              <Route path="/spaces"             element={<Spaces />} />
+              <Route path="/spaces/:id"         element={<Spaces />} />
+              <Route path="/debates"            element={<Debates />} />
+              <Route path="/debates/:id"        element={<Debates />} />
+              <Route path="/analytics"          element={<Analytics />} />
+              <Route path="/trending"           element={<Trending />} />
+              <Route path="/moderation"         element={<ModerationPanel />} />
+              <Route path="/settings"           element={<Settings />} />
+              <Route path="/legal"              element={<Legal />} />
+              <Route path="/terms"              element={<TermsOfService />} />
+              <Route path="/privacy"            element={<PrivacyPolicy />} />
+              <Route path="/grievance"          element={<GrievanceOfficer />} />
+              <Route path="/guidelines"         element={<CommunityGuidelines />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
