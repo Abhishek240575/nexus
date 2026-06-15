@@ -22,6 +22,15 @@ const app = express();
 
 // ─── Security & parsing ───────────────────────────────────────────────────────
 app.set('trust proxy', 1);
+app.get('/api/test-moderation', async (_req, res) => {
+  try {
+    const { moderateContent } = await import('./services/moderation.service');
+    const result = await moderateContent('This is a test post about democracy in India');
+    res.json({ success: true, result });
+  } catch (err: any) {
+    res.json({ success: false, error: err.message, cause: err.cause?.message });
+  }
+});
 app.use(cors({
   origin:      process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true,
