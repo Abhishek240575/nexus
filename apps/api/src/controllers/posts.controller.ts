@@ -231,9 +231,9 @@ export const getExploreFeed = async (req: Request, res: Response): Promise<void>
             EXISTS(SELECT 1 FROM reposts WHERE user_id = $1::uuid AND post_id = p.id) AS is_reposted
      FROM posts p JOIN users u ON u.id = p.user_id
      WHERE p.is_published = TRUE AND p.reply_to_id IS NULL AND u.suspended = FALSE
-       AND p.created_at > NOW() - INTERVAL '48 hours'
+       AND p.created_at > NOW() - INTERVAL '7 days'
        AND ($2::timestamptz IS NULL OR p.created_at < $2::timestamptz)
-     ORDER BY (p.likes_count + p.reposts_count * 2 + p.replies_count) DESC, p.created_at DESC
+     ORDER BY p.created_at DESC
      LIMIT $3`,
     [userId, cursor, limit]
   );
