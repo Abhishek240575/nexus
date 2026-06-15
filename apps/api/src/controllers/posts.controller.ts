@@ -65,23 +65,20 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
 
   const post = rows[0];
 
-// ─── AI Content Moderation (async — does not block publishing) ───────────
+// ─── AI Content Moderation ────────────────────────────────────────────────
   if (content && process.env.ANTHROPIC_API_KEY) {
-    setImmediate(async () => {
+    Promise.resolve().then(async () => {
       try {
+        console.log(`[Moderation] Screening post ${post.id}...`);
         const language  = await detectLanguage(content);
         const modResult = await moderateContent(content, language);
+        console.log(`[Moderation] Post ${post.id} → ${modResult.decision} (${modResult.confidence})`);
 
         await db.query('UPDATE posts SET language = $1 WHERE id = $2', [language, post.id]);
 
         if (modResult.decision === 'BLOCK') {
-          // Unpublish and notify user
           await db.query('UPDATE posts SET is_published = FALSE WHERE id = $1', [post.id]);
-          await db.query(
-            `INSERT INTO notifications (user_id, type, actor_id)
-             VALUES ($1, 'system', $1)`,
-            [userId]
-          );
+          console.log(`[Moderation] Post ${post.id} BLOCKED and unpublished`);
         } else if (modResult.decision === 'FLAG') {
           await db.query('UPDATE posts SET is_published = FALSE WHERE id = $1', [post.id]);
           await db.query(
@@ -89,18 +86,19 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
              VALUES ($1, $2, $3, $4, $5)`,
             [post.id, modResult.decision, modResult.reason, modResult.categories, modResult.confidence]
           );
+          console.log(`[Moderation] Post ${post.id} FLAGGED for review`);
         } else if (modResult.decision === 'WARN') {
           await db.query(
             'UPDATE posts SET has_warning = TRUE, warning_reason = $1 WHERE id = $2',
             [modResult.reason, post.id]
           );
+          console.log(`[Moderation] Post ${post.id} published with WARNING`);
         }
       } catch (err) {
         console.error('[Moderation] Background check failed:', err);
       }
     });
   }
-
   await db.query('UPDATE users SET posts_count = posts_count + 1 WHERE id = $1', [userId]);
 
   if (content) {
