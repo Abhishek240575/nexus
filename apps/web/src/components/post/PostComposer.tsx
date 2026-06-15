@@ -105,7 +105,9 @@ export default function PostComposer({
     setSubmitting('Posting…');
     setError('');
     try {
-      const media_urls = await uploadImages();
+      // Images are previewed locally but require a storage service to host
+     // For now skip media_urls if no upload endpoint configured
+  const media_urls: string[] = [];
 
       let scheduled_at: string | undefined;
       if (showSchedule && scheduleDate && scheduleTime) {

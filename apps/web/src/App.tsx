@@ -72,29 +72,30 @@ export default function App() {
 
             {/* App routes */}
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-              <Route index                      element={<Home />} />
-              <Route path="/explore"            element={<Explore />} />
-              <Route path="/notifications"      element={<Notifications />} />
-              <Route path="/messages"           element={<Messages />} />
-              <Route path="/messages/:id"       element={<Messages />} />
-              <Route path="/:handle"            element={<Profile />} />
-              <Route path="/:handle/post/:id"   element={<PostDetail />} />
-              <Route path="/bookmarks"            element={<Bookmarks />} />
-              <Route path="/communities/:slug"  element={<Communities />} />
+              <Route index                         element={<Home />} />
+              <Route path="/explore"               element={<Explore />} />
+              <Route path="/notifications"         element={<Notifications />} />
+              <Route path="/messages"              element={<Messages />} />
+              <Route path="/messages/:id"          element={<Messages />} />
+              <Route path="/bookmarks"             element={<Bookmarks />} />
+              <Route path="/communities"           element={<Communities />} />
+              <Route path="/communities/:slug"     element={<Communities />} />
               <Route path="/communities/:slug/mod" element={<CommunityMod />} />
-              <Route path="/spaces"             element={<Spaces />} />
-              <Route path="/spaces/:id"         element={<Spaces />} />
-              <Route path="/debates"            element={<Debates />} />
-              <Route path="/debates/:id"        element={<Debates />} />
-              <Route path="/analytics"          element={<Analytics />} />
-              <Route path="/trending"           element={<Trending />} />
-              <Route path="/moderation"         element={<ModerationPanel />} />
-              <Route path="/settings"           element={<Settings />} />
-              <Route path="/legal"              element={<Legal />} />
-              <Route path="/terms"              element={<TermsOfService />} />
-              <Route path="/privacy"            element={<PrivacyPolicy />} />
-              <Route path="/grievance"          element={<GrievanceOfficer />} />
-              <Route path="/guidelines"         element={<CommunityGuidelines />} />
+              <Route path="/spaces"                element={<Spaces />} />
+              <Route path="/spaces/:id"            element={<Spaces />} />
+              <Route path="/debates"               element={<Debates />} />
+              <Route path="/debates/:id"           element={<Debates />} />
+              <Route path="/analytics"             element={<Analytics />} />
+              <Route path="/trending"              element={<Trending />} />
+              <Route path="/moderation"            element={<ModerationPanel />} />
+              <Route path="/settings"              element={<Settings />} />
+              <Route path="/legal"                 element={<Legal />} />
+              <Route path="/terms"                 element={<TermsOfService />} />
+              <Route path="/privacy"               element={<PrivacyPolicy />} />
+              <Route path="/grievance"             element={<GrievanceOfficer />} />
+              <Route path="/guidelines"            element={<CommunityGuidelines />} />
+              <Route path="/:handle"               element={<Profile />} />
+              <Route path="/:handle/post/:id"      element={<PostDetail />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
