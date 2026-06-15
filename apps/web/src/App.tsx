@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider }        from '@tanstack/react-query';
-import { QueryDevtools } from '@tanstack/react-query-devtools';
+import { ReactQueryDevtools as QueryDevtools } from '@tanstack/react-query-devtools';
 import { useAuthStore }  from '@/stores/auth.store';
 
 // Layouts
@@ -9,6 +9,7 @@ import AuthLayout  from '@/components/layout/AuthLayout';
 
 // Pages — lazy loaded
 import { lazy, Suspense } from 'react';
+const Analytics    = lazy(() => import('@/pages/Analytics'));
 const Home          = lazy(() => import('@/pages/Home'));
 const Explore       = lazy(() => import('@/pages/Explore'));
 const Notifications = lazy(() => import('@/pages/Notifications'));
