@@ -56,7 +56,14 @@ function SpaceRoom({ space, token, role, onLeave }: {
       connect={true}
       audio={role !== 'listener'}
       video={false}
-      onDisconnected={onLeave}
+      onDisconnected={(reason?: any) => {
+        console.log('[Spaces] Disconnected:', reason);
+        if (reason === 'leave' || reason === 'kicked' || reason === 'room_deleted') {
+          onLeave();
+        }
+        // On network hiccup or token expiry — don't close, LiveKit will reconnect
+      }}
+      options={{ reconnectPolicy: { maxRetries: 5 } }}
     >
       <RoomAudioRenderer />
       <div className="flex flex-col h-screen max-h-screen bg-gray-950">
@@ -290,21 +297,17 @@ export default function Spaces() {
   const createMutation = useMutation({
     mutationFn: (data: any) => spacesService.create(data),
     onSuccess:  (res: any) => {
-    console.log('[Spaces] Create response:', res.data);
-    const data = res.data?.data || res.data;
-    const token = data.token;
-    const { token: _t, livekit_url: _l, ...space } = data;
-    console.log('[Spaces] Token:', token, 'Space:', space);
-    if (!token) {
-      console.error('[Spaces] No token received!');
-      return;
-    }
-    setRoomToken(token);
-    setActiveSpace(space);
-    setMyRole('host');
-    queryClient.invalidateQueries({ queryKey: ['spaces'] });
-    setShowCreate(false);
-  },
+      console.log('[Spaces] Create response:', res.data);
+      const data = res.data?.data || res.data;
+      const token = data.token;
+      const { token: _t, livekit_url: _l, ...space } = data;
+      if (!token) { console.error('[Spaces] No token received!'); return; }
+      setRoomToken(token);
+      setActiveSpace(space);
+      setMyRole('host');
+      queryClient.invalidateQueries({ queryKey: ['spaces'] });
+      setShowCreate(false);
+    },
   });
 
   if (id) return <SpaceDetail id={id} />;
