@@ -1,6 +1,7 @@
 import { NavLink, useNavigate }    from 'react-router-dom';
 import { Home, Search, Bell, Mail, Bookmark, User,
-         BarChart2, Users, Radio, Settings, LogOut, Swords, TrendingUp, List } from 'lucide-react';
+         BarChart2, Users, Radio, Settings, LogOut, Swords, TrendingUp, List, Sun, Moon } from 'lucide-react';
+import { useThemeStore } from '@/stores/theme.store';
 import { useAuthStore }   from '@/stores/auth.store';
 import { authService }    from '@/services/auth.service';
 import { disconnectSocket } from '@/services/socket';
@@ -13,6 +14,7 @@ export default function Sidebar() {
   const { user, logout }    = useAuthStore();
   const navigate            = useNavigate();
   const { unreadCount, setUnreadCount } = useNotificationsStore();
+  const { theme, setTheme, isDark } = useThemeStore();
 
   useQuery({
     queryKey: ['notifications-unread'],
@@ -96,6 +98,12 @@ export default function Sidebar() {
       <NavLink to="/legal" className="px-3 py-1 text-xs text-gray-400 hover:text-brand transition-colors block">
         Legal & Compliance
       </NavLink>
+      <button
+        onClick={() => setTheme(isDark() ? 'light' : 'dark')}
+        className="flex items-center gap-2 px-3 py-2 text-xs text-gray-500 hover:text-brand transition-colors w-full">
+        {isDark() ? <Sun size={14} /> : <Moon size={14} />}
+        {isDark() ? 'Light mode' : 'Dark mode'}
+      </button>
     </div>
   );
 }

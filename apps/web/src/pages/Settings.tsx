@@ -2,7 +2,32 @@ import { useState }        from 'react';
 import { useAuthStore }    from '@/stores/auth.store';
 import { usersService }    from '@/services/posts.service';
 import { useQueryClient }  from '@tanstack/react-query';
-import { Camera, Loader2 } from 'lucide-react';
+import { Camera, Loader2, Sun, Moon, Monitor } from 'lucide-react';
+import { useThemeStore }   from '@/stores/theme.store';
+
+function ThemeSelector() {
+  const { theme, setTheme } = useThemeStore();
+  const options = [
+    { value: 'light', label: 'Light', icon: Sun },
+    { value: 'dark',  label: 'Dark',  icon: Moon },
+    { value: 'system',label: 'System',icon: Monitor },
+  ] as const;
+  return (
+    <div className="flex gap-3">
+      {options.map(({ value, label, icon: Icon }) => (
+        <button key={value} onClick={() => setTheme(value)}
+          className={`flex-1 flex flex-col items-center gap-2 py-3 rounded-xl border-2 transition-all ${
+            theme === value
+              ? 'border-brand bg-brand/5 text-brand'
+              : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'
+          }`}>
+          <Icon size={20} />
+          <span className="text-xs font-medium">{label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function Settings() {
   const { user, setUser } = useAuthStore();
@@ -87,6 +112,11 @@ export default function Settings() {
             <p>Premium tier: <span className="font-medium text-gray-900 dark:text-white capitalize">{user?.premium_tier}</span></p>
             <p>Verified: <span className="font-medium text-gray-900 dark:text-white">{user?.verified ? 'Yes' : 'No'}</span></p>
           </div>
+        </div>
+
+        <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white mb-4">Appearance</h2>
+          <ThemeSelector />
         </div>
       </div>
     </div>
