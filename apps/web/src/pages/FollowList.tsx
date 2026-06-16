@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { api } from '@/services/api.client';
@@ -55,7 +55,9 @@ function UserRow({ user, currentUserId }: { user: any; currentUserId?: string })
 }
 
 export default function FollowList() {
-  const { handle, type } = useParams<{ handle: string; type: 'following' | 'followers' }>();
+  const { handle } = useParams<{ handle: string }>();
+  const location = useLocation();
+  const type = location.pathname.endsWith('/followers') ? 'followers' : 'following';
   const { user } = useAuthStore();
 
   const { data: profileData } = useQuery({
