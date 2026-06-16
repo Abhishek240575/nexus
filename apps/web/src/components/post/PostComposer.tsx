@@ -165,7 +165,7 @@ export default function PostComposer({
     <div className="border-b border-gray-100 dark:border-gray-800 px-4 py-3">
       <div className="flex gap-3">
         <img src={avatarUrl} alt={user.handle}
-          className="w-10 h-10 rounded-full object-cover flex-shrink-0 mt-1" />
+          className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover flex-shrink-0 mt-1" />
         <div className="flex-1 min-w-0">
           <textarea
             ref={textareaRef}
@@ -276,7 +276,7 @@ export default function PostComposer({
 
           {/* Toolbar */}
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-800">
-            <div className="flex items-center gap-1 -ml-1">
+            <div className="flex items-center gap-1 -ml-1 overflow-x-auto scrollbar-hide">
 
               {/* Image upload */}
               <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden"
@@ -339,7 +339,7 @@ export default function PostComposer({
               <button
                 onClick={handleSubmit}
                 disabled={!canPost}
-                className="bg-brand hover:bg-brand-dark disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-4 py-1.5 rounded-full text-sm transition-colors">
+                className="bg-brand hover:bg-brand-dark disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-3 py-1.5 rounded-full text-sm transition-colors whitespace-nowrap">
                 {submitting || (showSchedule && scheduleDate && scheduleTime ? '📅 Schedule' : replyToId ? 'Reply' : 'Post')}
               </button>
             </div>
