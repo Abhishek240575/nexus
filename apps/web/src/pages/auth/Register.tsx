@@ -69,7 +69,7 @@ export default function Register() {
           disabled={isSubmitting}
           className="w-full bg-brand hover:bg-brand-dark disabled:opacity-60 text-white font-semibold py-3 rounded-full transition-colors"
         >
-          {isSubmitting ? 'Creating accountâ€¦' : 'Create account'}
+          {isSubmitting ? 'Creating account...' : 'Create account'}
         </button>
       </form>
 

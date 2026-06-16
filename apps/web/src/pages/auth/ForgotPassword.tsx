@@ -83,7 +83,7 @@ export default function ForgotPassword() {
 
               <button type="submit" disabled={!email.trim() || loading}
                 className="w-full bg-brand hover:bg-brand-dark disabled:opacity-50 text-white font-semibold py-3 rounded-full transition-colors flex items-center justify-center gap-2">
-                {loading ? <><Loader2 size={16} className="animate-spin" /> Sendingâ€¦</> : 'Send reset link'}
+                {loading ? <><Loader2 size={16} className="animate-spin" /> Sending...</> : 'Send reset link'}
               </button>
             </form>
 
