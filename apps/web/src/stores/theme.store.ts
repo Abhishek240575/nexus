@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 type Theme = 'light' | 'dark' | 'system';
@@ -29,13 +29,13 @@ export const useThemeStore = create<ThemeStore>()(
         return theme === 'dark' || (theme === 'system' && getSystemDark());
       },
     }),
-    { name: 'nexus-theme' }
+    { name: 'Deemona-theme' }
   )
 );
 
 // Initialize on load
 export const initTheme = () => {
-  const stored = localStorage.getItem('nexus-theme');
+  const stored = localStorage.getItem('Deemona-theme');
   const theme: Theme = stored ? JSON.parse(stored)?.state?.theme ?? 'system' : 'system';
   applyTheme(theme);
 

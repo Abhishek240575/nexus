@@ -1,10 +1,10 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, FileText, Mail, Phone, Clock, ChevronDown, ChevronUp, AlertTriangle, CheckCircle } from 'lucide-react';
 
-const GRIEVANCE_EMAIL   = 'grievance@nexus.in';
+const GRIEVANCE_EMAIL   = 'grievance@Deemona.in';
 const GRIEVANCE_OFFICER = 'Abhishek Kumar';
-const GRIEVANCE_ADDRESS = 'Nexus Internet Pvt. Ltd., New Delhi, India - 110001';
+const GRIEVANCE_ADDRESS = 'Deemona Internet Pvt. Ltd., New Delhi, India - 110001';
 const GRIEVANCE_PHONE   = '+91-11-XXXX-XXXX';
 const RESPONSE_TIME     = '24 hours';
 const RESOLUTION_TIME   = '15 days';
@@ -31,14 +31,14 @@ export function TermsOfService() {
           <FileText size={18} className="text-brand" />
           <h1 className="text-lg font-bold text-gray-900 dark:text-white">Terms of Service</h1>
         </div>
-        <p className="text-xs text-gray-400 mt-0.5">Last updated: June 2026 · Governed by Indian Law</p>
+        <p className="text-xs text-gray-400 mt-0.5">Last updated: June 2026 Â· Governed by Indian Law</p>
       </div>
 
       <div className="px-4 py-4 space-y-3 text-sm text-gray-600 dark:text-gray-400">
-        <p>Welcome to Nexus. By using Nexus, you agree to these Terms of Service. These terms are governed by the laws of India, including the Information Technology Act, 2000 and the IT (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021.</p>
+        <p>Welcome to Deemona. By using Deemona, you agree to these Terms of Service. These terms are governed by the laws of India, including the Information Technology Act, 2000 and the IT (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021.</p>
 
         <Section title="1. Acceptance of Terms">
-          <p>By accessing or using Nexus, you confirm that you are at least 18 years of age, have read and understood these Terms, and agree to be bound by them. If you are accessing Nexus on behalf of an organization, you agree to these Terms on behalf of that organization.</p>
+          <p>By accessing or using Deemona, you confirm that you are at least 18 years of age, have read and understood these Terms, and agree to be bound by them. If you are accessing Deemona on behalf of an organization, you agree to these Terms on behalf of that organization.</p>
         </Section>
 
         <Section title="2. User Conduct & Prohibited Content">
@@ -57,7 +57,7 @@ export function TermsOfService() {
         </Section>
 
         <Section title="3. Content Moderation (IT Rules 2021)">
-          <p>In compliance with Rule 4 of the IT (Intermediary Guidelines) Rules, 2021, Nexus:</p>
+          <p>In compliance with Rule 4 of the IT (Intermediary Guidelines) Rules, 2021, Deemona:</p>
           <ul className="list-disc ml-4 space-y-1 mt-2">
             <li>Employs AI-based automated content moderation to detect and remove harmful content</li>
             <li>Maintains a human review process for flagged content</li>
@@ -73,7 +73,7 @@ export function TermsOfService() {
         </Section>
 
         <Section title="5. Intellectual Property">
-          <p>You retain ownership of content you post on Nexus. By posting, you grant Nexus a non-exclusive, royalty-free license to display, distribute, and promote your content on the platform. You must not post content that infringes on others' intellectual property rights.</p>
+          <p>You retain ownership of content you post on Deemona. By posting, you grant Deemona a non-exclusive, royalty-free license to display, distribute, and promote your content on the platform. You must not post content that infringes on others' intellectual property rights.</p>
         </Section>
 
         <Section title="6. Account Termination">
@@ -81,7 +81,7 @@ export function TermsOfService() {
         </Section>
 
         <Section title="7. Limitation of Liability">
-          <p>Nexus is an intermediary platform as defined under the Information Technology Act, 2000. We are not liable for user-generated content posted on the platform. Our liability is limited to the extent permitted by applicable Indian law.</p>
+          <p>Deemona is an intermediary platform as defined under the Information Technology Act, 2000. We are not liable for user-generated content posted on the platform. Our liability is limited to the extent permitted by applicable Indian law.</p>
         </Section>
 
         <Section title="8. Governing Law & Dispute Resolution">
@@ -89,7 +89,7 @@ export function TermsOfService() {
         </Section>
 
         <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
-          <p>For questions about these Terms, contact us at <a href={`mailto:legal@nexus.in`} className="text-brand hover:underline">legal@nexus.in</a></p>
+          <p>For questions about these Terms, contact us at <a href={`mailto:legal@Deemona.in`} className="text-brand hover:underline">legal@Deemona.in</a></p>
         </div>
       </div>
     </div>
@@ -108,7 +108,7 @@ export function PrivacyPolicy() {
       </div>
 
       <div className="px-4 py-4 space-y-3 text-sm text-gray-600 dark:text-gray-400">
-        <p>This Privacy Policy explains how Nexus Internet Pvt. Ltd. collects, uses, and protects your personal information in accordance with the Information Technology (Reasonable Security Practices and Procedures and Sensitive Personal Data or Information) Rules, 2011.</p>
+        <p>This Privacy Policy explains how Deemona Internet Pvt. Ltd. collects, uses, and protects your personal information in accordance with the Information Technology (Reasonable Security Practices and Procedures and Sensitive Personal Data or Information) Rules, 2011.</p>
 
         <Section title="1. Information We Collect">
           <ul className="list-disc ml-4 space-y-1">
@@ -160,7 +160,7 @@ export function PrivacyPolicy() {
         </Section>
 
         <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
-          <p>For privacy concerns, contact: <a href={`mailto:privacy@nexus.in`} className="text-brand hover:underline">privacy@nexus.in</a></p>
+          <p>For privacy concerns, contact: <a href={`mailto:privacy@Deemona.in`} className="text-brand hover:underline">privacy@Deemona.in</a></p>
         </div>
       </div>
     </div>
@@ -187,7 +187,7 @@ export function GrievanceOfficer() {
           <AlertTriangle size={18} className="text-brand" />
           <h1 className="text-lg font-bold text-gray-900 dark:text-white">Grievance Redressal</h1>
         </div>
-        <p className="text-xs text-gray-400 mt-0.5">IT (Intermediary Guidelines) Rules, 2021 · Rule 4(2)</p>
+        <p className="text-xs text-gray-400 mt-0.5">IT (Intermediary Guidelines) Rules, 2021 Â· Rule 4(2)</p>
       </div>
 
       <div className="px-4 py-4">
@@ -270,7 +270,7 @@ export function GrievanceOfficer() {
             <button onClick={handleSubmit}
               disabled={!form.name || !form.email || !form.description || submitting}
               className="w-full bg-brand text-white py-3 rounded-full font-semibold text-sm disabled:opacity-50 hover:bg-brand-dark transition-colors">
-              {submitting ? 'Submitting…' : 'Submit Grievance'}
+              {submitting ? 'Submittingâ€¦' : 'Submit Grievance'}
             </button>
           </div>
         )}
@@ -294,17 +294,17 @@ export function CommunityGuidelines() {
         </div>
       </div>
       <div className="px-4 py-4 space-y-4 text-sm text-gray-600 dark:text-gray-400">
-        <p>Nexus is built for open, civil discourse. These guidelines help keep our platform safe and constructive for everyone.</p>
+        <p>Deemona is built for open, civil discourse. These guidelines help keep our platform safe and constructive for everyone.</p>
 
         {[
-          { emoji: '🤝', title: 'Be Respectful', desc: 'Treat others with dignity. Disagree with ideas, not people. Personal attacks, harassment, and bullying are not allowed.' },
-          { emoji: '🇮🇳', title: 'National Integrity', desc: 'Content that threatens the sovereignty, unity, or integrity of India is strictly prohibited and will be reported to authorities.' },
-          { emoji: '🕊️', title: 'No Hate Speech', desc: 'Content promoting hatred against any religion, caste, community, gender, or sexual orientation is banned. This includes coded language and dog whistles.' },
-          { emoji: '✅', title: 'Share Accurate Information', desc: 'Do not spread misinformation or content designed to cause panic, communal disharmony, or public disorder.' },
-          { emoji: '🔒', title: 'Respect Privacy', desc: 'Do not share private information (addresses, phone numbers, ID documents) of others without consent. This includes public figures.' },
-          { emoji: '⚖️', title: 'Follow the Law', desc: 'All content must comply with Indian law, including IPC Sections 153A, 295A, 499, and 505. Content violating these laws will be removed and may be reported to law enforcement.' },
-          { emoji: '🔞', title: 'No Adult Content', desc: 'Nexus is not a platform for pornographic, obscene, or sexually explicit content. Such content will be removed immediately.' },
-          { emoji: '🚫', title: 'No Spam or Manipulation', desc: 'Coordinated inauthentic behaviour, bot networks, and artificial amplification of content are prohibited.' },
+          { emoji: 'ðŸ¤', title: 'Be Respectful', desc: 'Treat others with dignity. Disagree with ideas, not people. Personal attacks, harassment, and bullying are not allowed.' },
+          { emoji: 'ðŸ‡®ðŸ‡³', title: 'National Integrity', desc: 'Content that threatens the sovereignty, unity, or integrity of India is strictly prohibited and will be reported to authorities.' },
+          { emoji: 'ðŸ•Šï¸', title: 'No Hate Speech', desc: 'Content promoting hatred against any religion, caste, community, gender, or sexual orientation is banned. This includes coded language and dog whistles.' },
+          { emoji: 'âœ…', title: 'Share Accurate Information', desc: 'Do not spread misinformation or content designed to cause panic, communal disharmony, or public disorder.' },
+          { emoji: 'ðŸ”’', title: 'Respect Privacy', desc: 'Do not share private information (addresses, phone numbers, ID documents) of others without consent. This includes public figures.' },
+          { emoji: 'âš–ï¸', title: 'Follow the Law', desc: 'All content must comply with Indian law, including IPC Sections 153A, 295A, 499, and 505. Content violating these laws will be removed and may be reported to law enforcement.' },
+          { emoji: 'ðŸ”ž', title: 'No Adult Content', desc: 'Deemona is not a platform for pornographic, obscene, or sexually explicit content. Such content will be removed immediately.' },
+          { emoji: 'ðŸš«', title: 'No Spam or Manipulation', desc: 'Coordinated inauthentic behaviour, bot networks, and artificial amplification of content are prohibited.' },
         ].map(({ emoji, title, desc }) => (
           <div key={title} className="flex gap-3">
             <span className="text-2xl flex-shrink-0">{emoji}</span>
@@ -318,11 +318,11 @@ export function CommunityGuidelines() {
         <div className="bg-orange-50 dark:bg-orange-900/20 rounded-2xl p-4 mt-4">
           <p className="font-semibold text-orange-700 dark:text-orange-400 mb-1">Consequences of Violations</p>
           <ul className="text-xs space-y-1 text-orange-600 dark:text-orange-300">
-            <li>• Content warning applied</li>
-            <li>• Content removed</li>
-            <li>• Temporary account suspension</li>
-            <li>• Permanent account ban</li>
-            <li>• Reporting to law enforcement (for serious violations)</li>
+            <li>â€¢ Content warning applied</li>
+            <li>â€¢ Content removed</li>
+            <li>â€¢ Temporary account suspension</li>
+            <li>â€¢ Permanent account ban</li>
+            <li>â€¢ Reporting to law enforcement (for serious violations)</li>
           </ul>
         </div>
 
@@ -340,14 +340,14 @@ export default function Legal() {
           <Shield size={18} className="text-brand" />
           <h1 className="text-lg font-bold text-gray-900 dark:text-white">Legal & Compliance</h1>
         </div>
-        <p className="text-xs text-gray-400 mt-0.5">IT Act 2021 · Indian Law</p>
+        <p className="text-xs text-gray-400 mt-0.5">IT Act 2021 Â· Indian Law</p>
       </div>
       <div className="divide-y divide-gray-100 dark:divide-gray-800">
         {[
           { to: '/terms',       icon: FileText,       label: 'Terms of Service',        desc: 'Usage rules and legal agreement' },
           { to: '/privacy',     icon: Shield,         label: 'Privacy Policy',           desc: 'How we collect and use your data' },
           { to: '/guidelines',  icon: CheckCircle,    label: 'Community Guidelines',     desc: 'Rules for respectful discourse' },
-          { to: '/grievance',   icon: AlertTriangle,  label: 'Grievance Redressal',      desc: 'File a complaint · IT Rules 2021 Rule 4(2)' },
+          { to: '/grievance',   icon: AlertTriangle,  label: 'Grievance Redressal',      desc: 'File a complaint Â· IT Rules 2021 Rule 4(2)' },
         ].map(({ to, icon: Icon, label, desc }) => (
           <Link key={to} to={to}
             className="flex items-center gap-4 px-4 py-4 hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-colors">

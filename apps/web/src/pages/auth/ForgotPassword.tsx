@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
 import { api } from '@/services/api.client';
@@ -29,7 +29,7 @@ export default function ForgotPassword() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-black text-brand mb-2">Nexus</h1>
+          <h1 className="text-4xl font-black text-brand mb-2">Deemona</h1>
         </div>
 
         {sent ? (
@@ -40,7 +40,7 @@ export default function ForgotPassword() {
             </div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Check your email</h2>
             <p className="text-gray-500 text-sm mb-6">
-              If <span className="font-medium text-gray-900 dark:text-white">{email}</span> is registered on Nexus, you'll receive a password reset link shortly.
+              If <span className="font-medium text-gray-900 dark:text-white">{email}</span> is registered on Deemona, you'll receive a password reset link shortly.
             </p>
             <p className="text-xs text-gray-400 mb-6">
               The link expires in 1 hour. Check your spam folder if you don't see it.
@@ -83,7 +83,7 @@ export default function ForgotPassword() {
 
               <button type="submit" disabled={!email.trim() || loading}
                 className="w-full bg-brand hover:bg-brand-dark disabled:opacity-50 text-white font-semibold py-3 rounded-full transition-colors flex items-center justify-center gap-2">
-                {loading ? <><Loader2 size={16} className="animate-spin" /> Sending…</> : 'Send reset link'}
+                {loading ? <><Loader2 size={16} className="animate-spin" /> Sendingâ€¦</> : 'Send reset link'}
               </button>
             </form>
 

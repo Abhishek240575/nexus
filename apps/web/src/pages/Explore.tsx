@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Search, Loader2 }    from 'lucide-react';
 import { Link }               from 'react-router-dom';
 import { useQuery }           from '@tanstack/react-query';
@@ -32,9 +32,9 @@ export default function Explore() {
         <div className="flex items-center gap-3 bg-gray-100 dark:bg-gray-900 rounded-full px-4 py-2 mb-3">
           <Search size={16} className="text-gray-500 flex-shrink-0" />
           <input value={q} onChange={e => setQ(e.target.value)}
-            placeholder="Search Nexus"
+            placeholder="Search Deemona"
             className="bg-transparent flex-1 text-sm outline-none text-gray-900 dark:text-white placeholder-gray-500" />
-          {q && <button onClick={() => setQ('')} className="text-gray-400 hover:text-gray-600 text-xs">✕</button>}
+          {q && <button onClick={() => setQ('')} className="text-gray-400 hover:text-gray-600 text-xs">âœ•</button>}
         </div>
         {isSearch && (
           <div className="flex gap-4">
@@ -73,9 +73,9 @@ export default function Explore() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1">
                     <p className="font-semibold text-sm text-gray-900 dark:text-white truncate">{u.display_name || u.handle}</p>
-                    {u.verified && <span className="text-brand text-xs">✓</span>}
+                    {u.verified && <span className="text-brand text-xs">âœ“</span>}
                   </div>
-                  <p className="text-xs text-gray-500">@{u.handle} · {u.followers_count} followers</p>
+                  <p className="text-xs text-gray-500">@{u.handle} Â· {u.followers_count} followers</p>
                   {u.bio && <p className="text-xs text-gray-400 truncate mt-0.5">{u.bio}</p>}
                 </div>
               </Link>

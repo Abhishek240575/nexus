@@ -1,4 +1,4 @@
-import { useForm }       from 'react-hook-form';
+﻿import { useForm }       from 'react-hook-form';
 import { zodResolver }   from '@hookform/resolvers/zod';
 import { z }             from 'zod';
 import { Link, useNavigate } from 'react-router-dom';
@@ -35,7 +35,7 @@ export default function Register() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Join Nexus</h1>
+      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Join Deemona</h1>
       <p className="text-gray-500 mb-8">Create your account today.</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -69,7 +69,7 @@ export default function Register() {
           disabled={isSubmitting}
           className="w-full bg-brand hover:bg-brand-dark disabled:opacity-60 text-white font-semibold py-3 rounded-full transition-colors"
         >
-          {isSubmitting ? 'Creating account…' : 'Create account'}
+          {isSubmitting ? 'Creating accountâ€¦' : 'Create account'}
         </button>
       </form>
 

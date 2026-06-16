@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export interface AuthUser {
@@ -44,7 +44,7 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null, accessToken: null, refreshToken: null, isAuth: false }),
     }),
     {
-      name:    'nexus-auth',
+      name:    'Deemona-auth',
       partialize: (s) => ({
         user:         s.user,
         accessToken:  s.accessToken,

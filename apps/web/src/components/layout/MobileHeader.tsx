@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+﻿import { Link } from 'react-router-dom';
 import { Sun, Moon, Menu } from 'lucide-react';
 import { useThemeStore } from '@/stores/theme.store';
 import { useAuthStore }  from '@/stores/auth.store';
@@ -9,7 +9,7 @@ export default function MobileHeader() {
 
   return (
     <div className="md:hidden sticky top-0 z-40 bg-white/80 dark:bg-black/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between">
-      <Link to="/" className="text-xl font-bold text-brand">Nexus</Link>
+      <Link to="/" className="text-xl font-bold text-brand">Deemona</Link>
       <div className="flex items-center gap-2">
         <button
           onClick={() => setTheme(isDark() ? 'light' : 'dark')}

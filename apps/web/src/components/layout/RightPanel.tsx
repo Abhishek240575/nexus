@@ -1,4 +1,4 @@
-import { Search } from 'lucide-react';
+﻿import { Search } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { postsService } from '@/services/posts.service';
 import { Link } from 'react-router-dom';
@@ -17,7 +17,7 @@ export default function RightPanel() {
       <div className="flex items-center gap-3 bg-gray-100 dark:bg-gray-900 rounded-full px-4 py-2">
         <Search size={16} className="text-gray-500" />
         <input
-          placeholder="Search Nexus"
+          placeholder="Search Deemona"
           className="bg-transparent flex-1 text-sm outline-none text-gray-900 dark:text-white placeholder-gray-500"
         />
       </div>

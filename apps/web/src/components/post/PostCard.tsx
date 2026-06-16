@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+﻿import { useState, useRef, useEffect } from 'react';
 import { Link }            from 'react-router-dom';
 import { Heart, Repeat2, MessageCircle, Bookmark, Share, MoreHorizontal, Globe, X,
          UserPlus, VolumeX, Ban, Flag, Code, ThumbsDown, BarChart2, Eye } from 'lucide-react';
@@ -63,15 +63,15 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
   }, [showMenu]);
 
   const LANGS = [
-    { code: 'hi', label: 'हिंदी' },
+    { code: 'hi', label: 'à¤¹à¤¿à¤‚à¤¦à¥€' },
     { code: 'en', label: 'English' },
-    { code: 'ta', label: 'தமிழ்' },
-    { code: 'te', label: 'తెలుగు' },
-    { code: 'bn', label: 'বাংলা' },
-    { code: 'mr', label: 'मराठी' },
-    { code: 'gu', label: 'ગુજરાતી' },
-    { code: 'kn', label: 'ಕನ್ನಡ' },
-    { code: 'ml', label: 'മലയാളം' },
+    { code: 'ta', label: 'à®¤à®®à®¿à®´à¯' },
+    { code: 'te', label: 'à°¤à±†à°²à±à°—à±' },
+    { code: 'bn', label: 'à¦¬à¦¾à¦‚à¦²à¦¾' },
+    { code: 'mr', label: 'à¤®à¤°à¤¾à¤ à¥€' },
+    { code: 'gu', label: 'àª—à«àªœàª°àª¾àª¤à«€' },
+    { code: 'kn', label: 'à²•à²¨à³à²¨à²¡' },
+    { code: 'ml', label: 'à´®à´²à´¯à´¾à´³à´‚' },
   ];
 
   const handleTranslate = async (langCode: string) => {
@@ -145,7 +145,7 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
     setShowMenu(false);
     switch (action) {
       case 'not_interested':
-        setMenuMsg("Got it — we'll show fewer posts like this");
+        setMenuMsg("Got it â€” we'll show fewer posts like this");
         setTimeout(() => setMenuMsg(''), 3000);
         break;
       case 'follow':
@@ -169,11 +169,11 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
         }
         break;
       case 'report':
-        setMenuMsg('Report submitted — thank you');
+        setMenuMsg('Report submitted â€” thank you');
         setTimeout(() => setMenuMsg(''), 3000);
         break;
       case 'embed': {
-        const embedCode = `<blockquote class="nexus-post"><a href="${window.location.origin}/${post.author_handle}/post/${post.id}">@${post.author_handle}: ${post.content?.slice(0, 100)}</a></blockquote>`;
+        const embedCode = `<blockquote class="Deemona-post"><a href="${window.location.origin}/${post.author_handle}/post/${post.id}">@${post.author_handle}: ${post.content?.slice(0, 100)}</a></blockquote>`;
         await navigator.clipboard.writeText(embedCode);
         setMenuMsg('Embed code copied!');
         setTimeout(() => setMenuMsg(''), 3000);
@@ -249,10 +249,10 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
                 {post.author_name || post.author_handle}
               </Link>
               {post.author_verified && (
-                <span className="text-brand text-xs">✓</span>
+                <span className="text-brand text-xs">âœ“</span>
               )}
               <span className="text-gray-500 text-sm truncate">@{post.author_handle}</span>
-              <span className="text-gray-400 text-sm flex-shrink-0">·</span>
+              <span className="text-gray-400 text-sm flex-shrink-0">Â·</span>
               <span className="text-gray-500 text-sm flex-shrink-0">
                 {formatDistanceToNowStrict(new Date(post.created_at), { addSuffix: false })}
               </span>
@@ -385,7 +385,7 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
               onClick={e => { e.preventDefault(); setShowLangPicker(s => !s); setTranslated(null); }}
               title="Translate"
               className={`p-2 rounded-full transition-colors ${showLangPicker ? 'text-brand bg-blue-50 dark:bg-blue-900/20' : 'text-gray-500 hover:text-brand hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}>
-              {translating ? <span className="text-xs">…</span> : <Globe size={16} />}
+              {translating ? <span className="text-xs">â€¦</span> : <Globe size={16} />}
             </button>
             <button
               onClick={handleShare}
