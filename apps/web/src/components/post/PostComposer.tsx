@@ -71,8 +71,14 @@ export default function PostComposer({
 
   const uploadImages = async (): Promise<string[]> => {
     if (!mediaFiles.length) return [];
-    // Convert to base64 data URLs for now (no dedicated upload endpoint needed)
-    return mediaPreviews;
+    const toBase64 = (file: File): Promise<string> =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload  = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    return Promise.all(mediaFiles.map(toBase64));
   };
 
   // ─── Emoji handling ──────────────────────────────────────────────────────────
@@ -107,7 +113,7 @@ export default function PostComposer({
     try {
       // Images are previewed locally but require a storage service to host
      // For now skip media_urls if no upload endpoint configured
-  const media_urls: string[] = [];
+  const media_urls = await uploadImages();
 
       let scheduled_at: string | undefined;
       if (showSchedule && scheduleDate && scheduleTime) {
