@@ -7,7 +7,7 @@ import { useAuthStore }  from '@/stores/auth.store';
 import AppLayout   from '@/components/layout/AppLayout';
 import AuthLayout  from '@/components/layout/AuthLayout';
 
-// Pages â€” lazy loaded
+// Pages "” lazy loaded
 import { lazy, Suspense } from 'react';
 const Home          = lazy(() => import('@/pages/Home'));
 const Explore       = lazy(() => import('@/pages/Explore'));

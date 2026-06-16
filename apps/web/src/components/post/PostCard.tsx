@@ -145,7 +145,7 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
     setShowMenu(false);
     switch (action) {
       case 'not_interested':
-        setMenuMsg("Got it â€” we'll show fewer posts like this");
+        setMenuMsg("Got it "” we'll show fewer posts like this");
         setTimeout(() => setMenuMsg(''), 3000);
         break;
       case 'follow':
@@ -169,7 +169,7 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
         }
         break;
       case 'report':
-        setMenuMsg('Report submitted â€” thank you');
+        setMenuMsg('Report submitted "” thank you');
         setTimeout(() => setMenuMsg(''), 3000);
         break;
       case 'embed': {
@@ -385,7 +385,7 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
               onClick={e => { e.preventDefault(); setShowLangPicker(s => !s); setTranslated(null); }}
               title="Translate"
               className={`p-2 rounded-full transition-colors ${showLangPicker ? 'text-brand bg-blue-50 dark:bg-blue-900/20' : 'text-gray-500 hover:text-brand hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}>
-              {translating ? <span className="text-xs">â€¦</span> : <Globe size={16} />}
+              {translating ? <span className="text-xs">...</span> : <Globe size={16} />}
             </button>
             <button
               onClick={handleShare}
