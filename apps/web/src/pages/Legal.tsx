@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, FileText, Mail, Phone, Clock, ChevronDown, ChevronUp, AlertTriangle, CheckCircle } from 'lucide-react';
 

@@ -1,4 +1,4 @@
-﻿import { Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { postsService } from '@/services/posts.service';
 import { Link } from 'react-router-dom';

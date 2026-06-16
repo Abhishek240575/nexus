@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Loader2 }    from 'lucide-react';
 import { Link }               from 'react-router-dom';
 import { useQuery }           from '@tanstack/react-query';

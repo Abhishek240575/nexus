@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link }            from 'react-router-dom';
 import { Heart, Repeat2, MessageCircle, Bookmark, Share, MoreHorizontal, Globe, X,
          UserPlus, VolumeX, Ban, Flag, Code, ThumbsDown, BarChart2, Eye } from 'lucide-react';
