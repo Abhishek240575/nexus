@@ -78,8 +78,8 @@ export default function App() {
               <Route path="/notifications"      element={<Notifications />} />
               <Route path="/messages"           element={<Messages />} />
               <Route path="/messages/:id"       element={<Messages />} />
-              <Route path="/:handle"            element={<Profile />} />
-              <Route path="/:handle/post/:id"   element={<PostDetail />} />
+              
+              
               <Route path="/bookmarks"            element={<Bookmarks />} />
               <Route path="/lists"                element={<Lists />} />
               <Route path="/lists/:id"            element={<Lists />} />
@@ -98,6 +98,9 @@ export default function App() {
               <Route path="/privacy"            element={<PrivacyPolicy />} />
               <Route path="/grievance"          element={<GrievanceOfficer />} />
               <Route path="/guidelines"         element={<CommunityGuidelines />} />
+              <Route path="/communities"           element={<Communities />} />
+              <Route path="/:handle"               element={<Profile />} />
+              <Route path="/:handle/post/:id"      element={<PostDetail />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
