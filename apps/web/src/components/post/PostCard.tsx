@@ -145,7 +145,7 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
     setShowMenu(false);
     switch (action) {
       case 'not_interested':
-        setMenuMsg("Got it "” we'll show fewer posts like this");
+        setMenuMsg("Got it - we will show fewer posts like this");
         setTimeout(() => setMenuMsg(''), 3000);
         break;
       case 'follow':
