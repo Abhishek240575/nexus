@@ -73,7 +73,7 @@ export default function FollowList() {
       : usersService.getFollowers(profileId!),
     enabled: !!profileId && !!type,
   });
-  const users   = data?.data?.data?.data ?? data?.data?.data ?? [];
+  const users = data?.data?.data?.data ?? [];
   const title   = type === 'following' ? 'Following' : 'Followers';
 
   return (
