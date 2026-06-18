@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { db }  from '../config/db';
 import * as R  from '../utils/response';
 import { AuthenticatedRequest } from '../types';
+import { checkDebateChampionBadge } from '../services/badges.service';
 
 // ─── Get all debates ──────────────────────────────────────────────────────────
 export const getDebates = async (req: Request, res: Response): Promise<void> => {
@@ -185,5 +186,6 @@ export const closeDebate = async (req: Request, res: Response): Promise<void> =>
   if (rows[0].creator_id !== userId) { R.forbidden(res, 'Not your debate'); return; }
 
   await db.query('UPDATE debates SET status = $1 WHERE id = $2', ['closed', id]);
+  await checkDebateChampionBadge(id);
   R.ok(res, null, 'Debate closed');
 };

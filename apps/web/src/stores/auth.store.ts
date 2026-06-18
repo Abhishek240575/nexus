@@ -8,7 +8,7 @@ export interface AuthUser {
   display_name: string | null;
   avatar_url:   string | null;
   verified:     boolean;
-  premium_tier: 'free' | 'pro' | 'creator';
+  premium_tier: 'free' | 'plus' | 'pro' | 'enterprise';
 }
 
 interface AuthState {
@@ -44,7 +44,7 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null, accessToken: null, refreshToken: null, isAuth: false }),
     }),
     {
-      name:    'Deemona-auth',
+      name:    'nexus-auth',
       partialize: (s) => ({
         user:         s.user,
         accessToken:  s.accessToken,

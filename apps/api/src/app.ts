@@ -23,6 +23,8 @@ import narrativeRoutes     from './routes/narrative.routes';
 import translationRoutes   from './routes/translation.routes';
 import communityModRoutes  from './routes/community-mod.routes';
 import listsRoutes         from './routes/lists.routes';
+import billingRoutes       from './routes/billing.routes';
+import monetizationRoutes  from './routes/monetization.routes';
 
 const app = express();
 
@@ -34,7 +36,10 @@ app.use(cors({
   methods:     ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 }));
 app.use(compression());
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({
+  limit: '10mb',
+  verify: (req: any, _res, buf) => { req.rawBody = buf.toString('utf8'); },
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
@@ -63,6 +68,8 @@ app.use('/api/narrative',     narrativeRoutes);
 app.use('/api/translate',    translationRoutes);
 app.use('/api/communities/:slug/mod', communityModRoutes);
 app.use('/api/lists',             listsRoutes);
+app.use('/api/billing',           billingRoutes);
+app.use('/api/monetization',      monetizationRoutes);
 
 // ─── Error handling ───────────────────────────────────────────────────────────
 app.use(notFoundHandler);

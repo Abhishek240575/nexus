@@ -64,6 +64,46 @@ export const createCommunity = async (req: Request, res: Response): Promise<void
   R.created(res, rows[0]);
 };
 
+// ─── Update community (branding requires Enterprise tier) ───────────────────
+export const updateCommunity = async (req: Request, res: Response): Promise<void> => {
+  const { id: userId } = (req as AuthenticatedRequest).user;
+  const { slug }        = req.params;
+  const { name, description, brand_color, brand_logo_url } = req.body;
+
+  const { rows: communityRows } = await db.query(
+    `SELECT c.id, c.owner_id FROM communities c WHERE c.slug = $1`, [slug]
+  );
+  if (!communityRows[0]) { R.notFound(res, 'Community not found'); return; }
+  if (communityRows[0].owner_id !== userId) { R.forbidden(res, 'Only the community owner can edit this'); return; }
+
+  // ─── Branding fields require Enterprise tier on the owner's account ────────
+  const wantsBranding = brand_color !== undefined || brand_logo_url !== undefined;
+  if (wantsBranding) {
+    const { rows: tierRow } = await db.query(
+      `SELECT t.features FROM users u LEFT JOIN subscription_tiers t ON t.id = u.premium_tier WHERE u.id = $1`,
+      [userId]
+    );
+    const features = tierRow[0]?.features || {};
+    if (!features.custom_branding) {
+      R.forbidden(res, 'Custom community branding requires an Enterprise subscription. Upgrade at /premium.');
+      return;
+    }
+  }
+
+  const { rows } = await db.query(
+    `UPDATE communities SET
+       name             = COALESCE($1, name),
+       description      = COALESCE($2, description),
+       brand_color      = COALESCE($3, brand_color),
+       brand_logo_url   = COALESCE($4, brand_logo_url),
+       is_premium_community = (brand_color IS NOT NULL OR $3 IS NOT NULL OR brand_logo_url IS NOT NULL OR $4 IS NOT NULL)
+     WHERE id = $5 RETURNING *`,
+    [name || null, description || null, brand_color || null, brand_logo_url || null, communityRows[0].id]
+  );
+
+  R.ok(res, rows[0]);
+};
+
 // ─── Join / leave community ───────────────────────────────────────────────────
 export const joinCommunity = async (req: Request, res: Response): Promise<void> => {
   const { id: userId } = (req as AuthenticatedRequest).user;

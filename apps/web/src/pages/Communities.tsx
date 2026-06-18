@@ -1,7 +1,7 @@
 import { useState }        from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Users, Plus, Loader2, Lock } from 'lucide-react';
+import { Users, Plus, Loader2, Lock, Crown, Palette } from 'lucide-react';
 import { api } from '@/services/api.client';
 import { useAuthStore } from '@/stores/auth.store';
 import Feed from '@/components/feed/Feed';
@@ -11,7 +11,57 @@ const commService = {
   getOne:     (slug: string) => api.get(`/api/communities/${slug}`),
   join:       (slug: string) => api.post(`/api/communities/${slug}/join`),
   create:     (data: any)   => api.post('/api/communities', data),
+  update:     (slug: string, data: any) => api.patch(`/api/communities/${slug}`, data),
 };
+
+function CommunityBrandingPanel({ slug, comm }: { slug: string; comm: any }) {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [color, setColor] = useState(comm.brand_color || '#1d9bf0');
+  const [logoUrl, setLogoUrl] = useState(comm.brand_logo_url || '');
+  const [error, setError] = useState('');
+
+  const updateMutation = useMutation({
+    mutationFn: () => commService.update(slug, { brand_color: color, brand_logo_url: logoUrl || undefined }),
+    onSuccess:  () => {
+      queryClient.invalidateQueries({ queryKey: ['community', slug] });
+      setOpen(false);
+      setError('');
+    },
+    onError: (err: any) => setError(err.response?.data?.error || 'Could not update branding'),
+  });
+
+  return (
+    <div className="mt-3">
+      <button onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1.5 text-xs text-brand hover:underline font-medium">
+        <Palette size={12} /> {open ? 'Hide' : 'Edit'} community branding
+      </button>
+      {open && (
+        <div className="mt-2 border border-gray-200 dark:border-gray-700 rounded-xl p-3 space-y-2 bg-gray-50 dark:bg-gray-900/30">
+          <div className="flex items-center gap-2">
+            <Crown size={12} className="text-amber-500" />
+            <span className="text-xs text-gray-500">Custom branding requires an Enterprise subscription</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="color" value={color} onChange={e => setColor(e.target.value)}
+              className="w-9 h-9 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer" />
+            <input value={color} onChange={e => setColor(e.target.value)}
+              className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-black text-gray-900 dark:text-white outline-none focus:border-brand" />
+          </div>
+          <input value={logoUrl} onChange={e => setLogoUrl(e.target.value)}
+            placeholder="Logo image URL (optional)"
+            className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-black text-gray-900 dark:text-white outline-none focus:border-brand" />
+          {error && <p className="text-red-500 text-xs">{error}</p>}
+          <button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}
+            className="bg-brand text-white px-4 py-1.5 rounded-full text-xs font-medium disabled:opacity-50 hover:bg-brand-dark transition-colors">
+            {updateMutation.isPending ? 'Saving…' : 'Save branding'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Communities() {
   const { slug }       = useParams<{ slug?: string }>();
@@ -58,11 +108,15 @@ export default function Communities() {
 
     return (
       <div>
-        <div className="h-24 bg-gradient-to-r from-brand to-purple-500" />
+        <div className={comm.brand_color ? 'h-24' : 'h-24 bg-gradient-to-r from-brand to-purple-500'}
+          style={comm.brand_color ? { background: comm.brand_color } : undefined} />
         <div className="px-4 pb-4 border-b border-gray-100 dark:border-gray-800">
           <div className="flex items-end justify-between -mt-8 mb-3">
-            <div className="w-16 h-16 rounded-xl bg-brand flex items-center justify-center text-white text-2xl font-bold border-4 border-white dark:border-black">
-              {comm.name[0]}
+            <div className="w-16 h-16 rounded-xl bg-brand flex items-center justify-center text-white text-2xl font-bold border-4 border-white dark:border-black overflow-hidden"
+              style={{ background: comm.brand_logo_url ? undefined : (comm.brand_color || undefined) }}>
+              {comm.brand_logo_url
+                ? <img src={comm.brand_logo_url} alt={comm.name} className="w-full h-full object-cover" />
+                : comm.name[0]}
             </div>
             {user && (
               <button
@@ -86,9 +140,16 @@ export default function Communities() {
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">{comm.name}</h1>
             {comm.is_private && <Lock size={14} className="text-gray-400" />}
+            {comm.is_premium_community && (
+              <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full">
+                <Crown size={10} /> Branded
+              </span>
+            )}
           </div>
           <p className="text-gray-500 text-sm mb-2">c/{comm.slug} · {comm.members_count} members</p>
           {comm.description && <p className="text-sm text-gray-700 dark:text-gray-300">{comm.description}</p>}
+
+          {comm.my_role === 'owner' && <CommunityBrandingPanel slug={slug} comm={comm} />}
         </div>
         <Feed type="profile" handle={slug} tab="community" />
       </div>

@@ -3,13 +3,15 @@ import { NavLink, Link } from 'react-router-dom';
 import { Home, Search, Bell, Mail, User, Menu, X,
          Bookmark, Users, Swords, TrendingUp, Radio,
          BarChart2, List, Shield, Settings, FileText,
-         LogOut, Sun, Moon } from 'lucide-react';
+         LogOut, Sun, Moon, Crown, Gift } from 'lucide-react';
 import { useNotificationsStore } from '@/stores/notifications.store';
 import { useAuthStore }          from '@/stores/auth.store';
 import { useThemeStore }         from '@/stores/theme.store';
 import { useNavigate }           from 'react-router-dom';
 
 const ALL_FEATURES = [
+  { to: '/premium',    icon: Crown,      label: 'Premium'     },
+  { to: '/earnings',   icon: Gift,       label: 'Earnings'    },
   { to: '/bookmarks',  icon: Bookmark,   label: 'Bookmarks'   },
   { to: '/lists',      icon: List,       label: 'Lists'       },
   { to: '/communities',icon: Users,      label: 'Communities' },

@@ -3,6 +3,7 @@ import { db }  from '../config/db';
 import * as R  from '../utils/response';
 import { AuthenticatedRequest } from '../types';
 import { AccessToken } from 'livekit-server-sdk';
+import { createOrder, verifyPaymentSignature } from '../services/razorpay.service';
 
 // ─── Generate LiveKit token ───────────────────────────────────────────────────
 const generateToken = async (
@@ -72,17 +73,41 @@ export const getSpace = async (req: Request, res: Response): Promise<void> => {
 // ─── Create space ─────────────────────────────────────────────────────────────
 export const createSpace = async (req: Request, res: Response): Promise<void> => {
   const { id: userId, handle } = (req as AuthenticatedRequest).user;
-  const { title, description, category = 'general', scheduled_at } = req.body;
+  const { title, description, category = 'general', scheduled_at,
+           is_ticketed = false, ticket_price_inr = 0, is_recorded = false } = req.body;
+
+  // ─── Tier gating: ticketing & recording require Pro/Enterprise ──────────────
+  const { rows: tierRow } = await db.query(
+    `SELECT u.premium_tier, t.features, t.max_space_listeners
+     FROM users u LEFT JOIN subscription_tiers t ON t.id = u.premium_tier
+     WHERE u.id = $1`,
+    [userId]
+  );
+  const features      = tierRow[0]?.features || {};
+  const maxListeners   = tierRow[0]?.max_space_listeners ?? 100;
+
+  if (is_ticketed && !features.ticketed_spaces) {
+    R.forbidden(res, 'Ticketed Spaces require a Pro or Enterprise subscription. Upgrade at /premium.'); return;
+  }
+  if (is_recorded && !features.space_recording) {
+    R.forbidden(res, 'Space recording requires a Pro or Enterprise subscription. Upgrade at /premium.'); return;
+  }
+  if (is_ticketed && (!ticket_price_inr || ticket_price_inr < 10)) {
+    R.badRequest(res, 'Ticket price must be at least ₹10'); return;
+  }
 
   const roomName = `nexus-space-${userId}-${Date.now()}`;
+  const ticketPricePaise = is_ticketed ? Math.round(ticket_price_inr * 100) : 0;
 
   const { rows } = await db.query(
-    `INSERT INTO spaces (host_id, title, description, category, room_name, status, scheduled_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO spaces (host_id, title, description, category, room_name, status, scheduled_at,
+                          is_ticketed, ticket_price_paise, is_recorded, max_listeners)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
      RETURNING *`,
     [userId, title, description || null, category, roomName,
      scheduled_at ? 'scheduled' : 'live',
-     scheduled_at || null]
+     scheduled_at || null,
+     is_ticketed, ticketPricePaise, is_recorded, maxListeners]
   );
 
   const space = rows[0];
@@ -123,8 +148,32 @@ export const joinSpace = async (req: Request, res: Response): Promise<void> => {
     [id, userId]
   );
 
-  const role = existing[0]?.role ||
-    (space.host_id === userId ? 'host' : 'listener');
+  const isHost = space.host_id === userId;
+  const role   = existing[0]?.role || (isHost ? 'host' : 'listener');
+
+  // ─── Ticketed entry check (host is always exempt) ─────────────────────────
+  if (space.is_ticketed && !isHost && !existing[0]) {
+    const { rows: ticket } = await db.query(
+      'SELECT 1 FROM space_tickets WHERE space_id = $1 AND user_id = $2',
+      [id, userId]
+    );
+    if (!ticket[0]) {
+      R.forbidden(res, `This is a ticketed Space (₹${space.ticket_price_paise / 100}). Purchase a ticket to join.`);
+      return;
+    }
+  }
+
+  // ─── Listener cap check (host/existing participants exempt) ───────────────
+  if (!isHost && !existing[0] && space.max_listeners !== -1) {
+    const { rows: countRow } = await db.query(
+      `SELECT COUNT(*) AS count FROM space_participants WHERE space_id = $1 AND left_at IS NULL`,
+      [id]
+    );
+    if (Number(countRow[0].count) >= space.max_listeners) {
+      R.forbidden(res, 'This Space is at full capacity for the host\'s current plan.');
+      return;
+    }
+  }
 
   // Upsert participant
   await db.query(
@@ -228,11 +277,65 @@ export const endSpace = async (req: Request, res: Response): Promise<void> => {
   const { id: userId } = (req as AuthenticatedRequest).user;
   const { id }         = req.params;
 
-  const { rows } = await db.query('SELECT host_id FROM spaces WHERE id = $1', [id]);
+  const { rows } = await db.query('SELECT host_id, is_recorded FROM spaces WHERE id = $1', [id]);
   if (!rows[0] || rows[0].host_id !== userId) {
     R.forbidden(res, 'Only the host can end this space'); return;
   }
 
   await db.query('UPDATE spaces SET status = $1, ended_at = NOW() WHERE id = $2', ['ended', id]);
+
+  // NOTE: actual recording upload requires LiveKit Egress configured against a
+  // storage bucket (S3/GCS). That infra step is not configured in this environment;
+  // recording_url remains NULL until Egress is wired up, and the frontend shows
+  // "Recording processing" rather than a broken link.
   R.ok(res, null, 'Space ended');
+};
+
+// ─── Purchase a ticket for a ticketed Space ───────────────────────────────────
+export const purchaseTicket = async (req: Request, res: Response): Promise<void> => {
+  const { id: userId } = (req as AuthenticatedRequest).user;
+  const { id }          = req.params;
+  const { order_id, payment_id, signature } = req.body;
+
+  const { rows: spaceRows } = await db.query('SELECT * FROM spaces WHERE id = $1', [id]);
+  if (!spaceRows[0]) { R.notFound(res, 'Space not found'); return; }
+  const space = spaceRows[0];
+  if (!space.is_ticketed) { R.badRequest(res, 'This Space does not require a ticket'); return; }
+
+  if (!verifyPaymentSignature(order_id, payment_id, signature)) {
+    R.badRequest(res, 'Payment verification failed'); return;
+  }
+
+  const { rows } = await db.query(
+    `INSERT INTO space_tickets (space_id, user_id, amount_inr_paise, razorpay_payment_id)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (space_id, user_id) DO NOTHING RETURNING *`,
+    [id, userId, space.ticket_price_paise, payment_id]
+  );
+
+  await db.query(
+    `INSERT INTO payment_transactions (user_id, razorpay_payment_id, razorpay_order_id, amount_inr_paise, status, purpose)
+     VALUES ($1, $2, $3, $4, 'captured', 'space_ticket')`,
+    [userId, payment_id, order_id, space.ticket_price_paise]
+  );
+
+  R.created(res, rows[0] || { message: 'Ticket already purchased' });
+};
+
+// ─── Create a Razorpay order to buy a Space ticket ────────────────────────────
+export const createTicketOrder = async (req: Request, res: Response): Promise<void> => {
+  const { id }  = req.params;
+
+  const { rows: spaceRows } = await db.query('SELECT * FROM spaces WHERE id = $1', [id]);
+  if (!spaceRows[0]) { R.notFound(res, 'Space not found'); return; }
+  const space = spaceRows[0];
+  if (!space.is_ticketed) { R.badRequest(res, 'This Space does not require a ticket'); return; }
+
+  try {
+    const order = await createOrder(space.ticket_price_paise, `space_ticket_${id}_${Date.now()}`, { space_id: id });
+    R.created(res, { order_id: order.id, amount: space.ticket_price_paise, currency: 'INR', key_id: process.env.RAZORPAY_KEY_ID });
+  } catch (err: any) {
+    console.error('[Spaces] Ticket order failed:', err.message);
+    R.serverError(res, 'Could not create ticket order');
+  }
 };

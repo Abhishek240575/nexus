@@ -3,6 +3,7 @@ import { db }    from '../config/db';
 import { redis } from '../config/redis';
 import * as R    from '../utils/response';
 import { AuthenticatedRequest } from '../types';
+import { checkCampaignLeaderBadge } from '../services/badges.service';
 
 // ─── TRENDING TOPICS ──────────────────────────────────────────────────────────
 
@@ -183,6 +184,7 @@ export const supportCampaign = async (req: Request, res: Response): Promise<void
     R.ok(res, { supporting: false });
   } else {
     await db.query('INSERT INTO campaign_supporters (campaign_id, user_id) VALUES ($1, $2)', [id, userId]);
+    await checkCampaignLeaderBadge(id);
     R.ok(res, { supporting: true });
   }
 };

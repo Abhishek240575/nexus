@@ -16,6 +16,9 @@ router.post('/',
     body('title').trim().isLength({ min: 5, max: 280 }),
     body('description').optional().trim().isLength({ max: 500 }),
     body('category').optional().isString(),
+    body('is_ticketed').optional().isBoolean(),
+    body('ticket_price_inr').optional().isFloat({ min: 0 }),
+    body('is_recorded').optional().isBoolean(),
   ],
   validate,
   ctrl.createSpace
@@ -31,5 +34,13 @@ router.post('/:id/raise-hand',
   ctrl.raiseHand
 );
 router.post('/:id/promote/:userId', protect, ctrl.promoteToSpeaker);
+
+router.post('/:id/ticket/order',   protect, ctrl.createTicketOrder);
+router.post('/:id/ticket/confirm',
+  protect,
+  [body('order_id').notEmpty(), body('payment_id').notEmpty(), body('signature').notEmpty()],
+  validate,
+  ctrl.purchaseTicket
+);
 
 export default router;

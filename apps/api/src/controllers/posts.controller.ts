@@ -42,8 +42,20 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
   if (!content && (!media_urls || media_urls.length === 0)) {
     R.badRequest(res, 'Post must have content or media'); return;
   }
-  if (content && content.length > 280) {
-    R.badRequest(res, 'Post exceeds 280 characters'); return;
+
+  // ─── Tier-based character limit ──────────────────────────────────────────
+  const { rows: tierRow } = await db.query(
+    `SELECT u.premium_tier, t.max_post_length, t.features
+     FROM users u LEFT JOIN subscription_tiers t ON t.id = u.premium_tier
+     WHERE u.id = $1`,
+    [userId]
+  );
+  const maxLength     = tierRow[0]?.max_post_length || 280;
+  const tierFeatures  = tierRow[0]?.features || {};
+  const priorityBoost = tierFeatures.priority_visibility ? 50 : 0;
+
+  if (content && content.length > maxLength) {
+    R.badRequest(res, `Post exceeds ${maxLength} character limit for your plan. Upgrade to Plus for longer posts.`); return;
   }
 
   if (reply_to_id) {
@@ -57,47 +69,55 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
   }
 
   const { rows } = await db.query(
-    `INSERT INTO posts (user_id, content, media_urls, reply_to_id, quote_of_id, community_id, scheduled_at, is_published)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO posts (user_id, content, media_urls, reply_to_id, quote_of_id, community_id, scheduled_at, is_published, priority_boost)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *`,
-    [userId, content || null, media_urls, reply_to_id || null, quote_of_id || null, community_id || null, scheduled_at || null, !scheduled_at]
+    [userId, content || null, media_urls, reply_to_id || null, quote_of_id || null, community_id || null, scheduled_at || null, !scheduled_at, priorityBoost]
   );
 
   const post = rows[0];
 
-// ─── AI Content Moderation ────────────────────────────────────────────────
+  // ─── AI Content Moderation ────────────────────────────────────────────────
   if (content && process.env.ANTHROPIC_API_KEY) {
-    Promise.resolve().then(async () => {
-      try {
-        console.log(`[Moderation] Screening post ${post.id}...`);
-        const language  = await detectLanguage(content);
-        const modResult = await moderateContent(content, language);
-        console.log(`[Moderation] Post ${post.id} → ${modResult.decision} (${modResult.confidence})`);
+    try {
+      const language   = await detectLanguage(content);
+      const modResult  = await moderateContent(content, language);
 
-        await db.query('UPDATE posts SET language = $1 WHERE id = $2', [language, post.id]);
-
-        if (modResult.decision === 'BLOCK') {
-          await db.query('UPDATE posts SET is_published = FALSE WHERE id = $1', [post.id]);
-          console.log(`[Moderation] Post ${post.id} BLOCKED and unpublished`);
-        } else if (modResult.decision === 'FLAG') {
-          await db.query('UPDATE posts SET is_published = FALSE WHERE id = $1', [post.id]);
-          await db.query(
-            `INSERT INTO moderation_queue (post_id, ai_decision, ai_reason, ai_categories, ai_confidence)
-             VALUES ($1, $2, $3, $4, $5)`,
-            [post.id, modResult.decision, modResult.reason, modResult.categories, modResult.confidence]
-          );
-          console.log(`[Moderation] Post ${post.id} FLAGGED for review`);
-        } else if (modResult.decision === 'WARN') {
-          await db.query(
-            'UPDATE posts SET has_warning = TRUE, warning_reason = $1 WHERE id = $2',
-            [modResult.reason, post.id]
-          );
-          console.log(`[Moderation] Post ${post.id} published with WARNING`);
-        }
-      } catch (err) {
-        console.error('[Moderation] Background check failed:', err);
+      if (modResult.decision === 'BLOCK') {
+        // Delete the post immediately
+        await db.query('DELETE FROM posts WHERE id = $1', [post.id]);
+        R.badRequest(res, `Post blocked: ${modResult.reason}. ${modResult.suggestion || ''}`);
+        return;
       }
-    });
+
+      if (modResult.decision === 'FLAG') {
+        // Hold for human review — unpublish
+        await db.query('UPDATE posts SET is_published = FALSE WHERE id = $1', [post.id]);
+        // Add to moderation queue
+        await db.query(
+          `INSERT INTO moderation_queue (post_id, ai_decision, ai_reason, ai_categories, ai_confidence)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [post.id, modResult.decision, modResult.reason, modResult.categories, modResult.confidence]
+        );
+        R.created(res, { ...post, moderation_status: 'under_review', message: 'Your post is under review and will be published once approved.' });
+        return;
+      }
+
+      if (modResult.decision === 'WARN') {
+        // Publish with content warning
+        await db.query('UPDATE posts SET has_warning = TRUE, warning_reason = $1 WHERE id = $2', [modResult.reason, post.id]);
+        post.has_warning     = true;
+        post.warning_reason  = modResult.reason;
+      }
+
+      // Store language
+      await db.query('UPDATE posts SET language = $1 WHERE id = $2', [language, post.id]);
+      post.language = language;
+
+    } catch (err) {
+      console.error('[Moderation] Failed:', err);
+      // Continue publishing if moderation fails
+    }
   }
   await db.query('UPDATE users SET posts_count = posts_count + 1 WHERE id = $1', [userId]);
 
@@ -106,6 +126,7 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
     if (tags.length > 0) await linkHashtags(post.id, tags);
   }
 
+  // Notify post owner of reply
   if (reply_to_id) {
     const { rows: parent } = await db.query('SELECT user_id FROM posts WHERE id = $1', [reply_to_id]);
     if (parent[0]) await createNotification({ user_id: parent[0].user_id, type: 'reply', actor_id: userId, post_id: reply_to_id });
@@ -233,7 +254,7 @@ export const getExploreFeed = async (req: Request, res: Response): Promise<void>
      WHERE p.is_published = TRUE AND p.reply_to_id IS NULL AND u.suspended = FALSE
        AND p.created_at > NOW() - INTERVAL '7 days'
        AND ($2::timestamptz IS NULL OR p.created_at < $2::timestamptz)
-     ORDER BY p.created_at DESC
+     ORDER BY p.created_at DESC, (p.priority_boost + p.likes_count + p.reposts_count * 2 + p.replies_count) DESC
      LIMIT $3`,
     [userId, cursor, limit]
   );

@@ -1,4 +1,5 @@
 import { useState }        from 'react';
+import { Link }            from 'react-router-dom';
 import { useAuthStore }    from '@/stores/auth.store';
 import { usersService }    from '@/services/posts.service';
 import { useQueryClient }  from '@tanstack/react-query';
@@ -112,6 +113,9 @@ export default function Settings() {
             <p>Premium tier: <span className="font-medium text-gray-900 dark:text-white capitalize">{user?.premium_tier}</span></p>
             <p>Verified: <span className="font-medium text-gray-900 dark:text-white">{user?.verified ? 'Yes' : 'No'}</span></p>
           </div>
+          <Link to="/premium" className="inline-block mt-3 text-sm text-brand hover:underline font-medium">
+            {user?.premium_tier === 'free' ? 'Upgrade to Premium →' : 'Manage subscription →'}
+          </Link>
         </div>
 
         <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800">

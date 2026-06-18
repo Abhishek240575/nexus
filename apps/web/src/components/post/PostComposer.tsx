@@ -44,7 +44,8 @@ export default function PostComposer({
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('');
 
-  const MAX    = 280;
+  const TIER_LIMITS: Record<string, number> = { free: 280, plus: 1000, pro: 1000, enterprise: 1000 };
+  const MAX    = TIER_LIMITS[user?.premium_tier || 'free'] || 280;
   const remain = MAX - content.length;
   const pct    = Math.min((content.length / MAX) * 100, 100);
   const canPost = (content.trim().length > 0 || mediaFiles.length > 0 || showPoll) && remain >= 0 && !submitting;
@@ -71,14 +72,8 @@ export default function PostComposer({
 
   const uploadImages = async (): Promise<string[]> => {
     if (!mediaFiles.length) return [];
-    const toBase64 = (file: File): Promise<string> =>
-      new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload  = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    return Promise.all(mediaFiles.map(toBase64));
+    // Convert to base64 data URLs for now (no dedicated upload endpoint needed)
+    return mediaPreviews;
   };
 
   // ─── Emoji handling ──────────────────────────────────────────────────────────
@@ -111,9 +106,7 @@ export default function PostComposer({
     setSubmitting('Posting…');
     setError('');
     try {
-      // Images are previewed locally but require a storage service to host
-     // For now skip media_urls if no upload endpoint configured
-  const media_urls = await uploadImages();
+      const media_urls = await uploadImages();
 
       let scheduled_at: string | undefined;
       if (showSchedule && scheduleDate && scheduleTime) {
@@ -171,7 +164,7 @@ export default function PostComposer({
     <div className="border-b border-gray-100 dark:border-gray-800 px-4 py-3">
       <div className="flex gap-3">
         <img src={avatarUrl} alt={user.handle}
-          className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover flex-shrink-0 mt-1" />
+          className="w-10 h-10 rounded-full object-cover flex-shrink-0 mt-1" />
         <div className="flex-1 min-w-0">
           <textarea
             ref={textareaRef}
@@ -282,7 +275,7 @@ export default function PostComposer({
 
           {/* Toolbar */}
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-800">
-            <div className="flex items-center gap-1 -ml-1 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-1 -ml-1">
 
               {/* Image upload */}
               <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden"
@@ -345,7 +338,7 @@ export default function PostComposer({
               <button
                 onClick={handleSubmit}
                 disabled={!canPost}
-                className="bg-brand hover:bg-brand-dark disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-3 py-1.5 rounded-full text-sm transition-colors whitespace-nowrap">
+                className="bg-brand hover:bg-brand-dark disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-4 py-1.5 rounded-full text-sm transition-colors">
                 {submitting || (showSchedule && scheduleDate && scheduleTime ? '📅 Schedule' : replyToId ? 'Reply' : 'Post')}
               </button>
             </div>

@@ -5,6 +5,8 @@ import { Calendar, Link2, MapPin, Loader2 } from 'lucide-react';
 import { usersService }    from '@/services/posts.service';
 import { useAuthStore }    from '@/stores/auth.store';
 import Feed                from '@/components/feed/Feed';
+import VerifiedBadge       from '@/components/common/VerifiedBadge';
+import UserBadges          from '@/components/common/UserBadges';
 import { format }          from 'date-fns';
 
 export default function Profile() {
@@ -46,9 +48,9 @@ export default function Profile() {
             className="w-20 h-20 rounded-full border-4 border-white dark:border-black object-cover" />
           <div>
             {isMe ? (
-              <Link to="/settings" className="border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white font-semibold px-4 py-1.5 rounded-full text-sm hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
-                 Edit profile
-              </Link>
+              <button className="border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white font-semibold px-4 py-1.5 rounded-full text-sm hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+                Edit profile
+              </button>
             ) : (
               <button
                 onClick={() => followMutation.mutate()}
@@ -67,14 +69,16 @@ export default function Profile() {
         <div className="mb-3">
           <div className="flex items-center gap-1.5">
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">{profile.display_name || profile.handle}</h1>
-            {profile.verified && <span className="text-brand text-sm">✓</span>}
+            {profile.verified && <VerifiedBadge tier={profile.premium_tier} size={16} />}
           </div>
           <p className="text-gray-500">@{profile.handle}</p>
         </div>
 
         {profile.bio && <p className="text-gray-900 dark:text-white text-sm mb-3 leading-relaxed">{profile.bio}</p>}
 
-        <div className="flex flex-wrap gap-x-4 gap-y-1 mb-3 text-sm text-gray-500">
+        <UserBadges handle={profile.handle} />
+
+        <div className="flex flex-wrap gap-x-4 gap-y-1 mb-3 mt-2 text-sm text-gray-500">
           {profile.location && <span className="flex items-center gap-1"><MapPin size={14} />{profile.location}</span>}
           {profile.website  && <a href={profile.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-brand hover:underline"><Link2 size={14} />{profile.website}</a>}
           <span className="flex items-center gap-1"><Calendar size={14} />Joined {format(new Date(profile.created_at), 'MMMM yyyy')}</span>

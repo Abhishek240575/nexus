@@ -7,7 +7,7 @@ import {
 } from '@livekit/components-react';
 import '@livekit/components-styles';
 import { Track } from 'livekit-client';
-import { Radio, Mic, MicOff, PhoneOff, Hand, Users, Plus, Loader2, Clock } from 'lucide-react';
+import { Radio, Mic, MicOff, PhoneOff, Hand, Users, Plus, Loader2, Clock, Crown, Ticket } from 'lucide-react';
 import { api } from '@/services/api.client';
 import { useAuthStore } from '@/stores/auth.store';
 import { formatDistanceToNowStrict } from 'date-fns';
@@ -63,7 +63,8 @@ function SpaceRoom({ space, token, role, onLeave }: {
         }
         // On network hiccup or token expiry — don't close, LiveKit will reconnect
       }}
-      >
+      options={{ reconnectPolicy: { maxRetries: 5 } }}
+    >
       <RoomAudioRenderer />
       <div className="flex flex-col h-screen max-h-screen bg-gray-950">
         {/* Header */}
@@ -210,12 +211,29 @@ function ParticipantGrid({ spaceId, hostId, myRole }: { spaceId: string; hostId:
 }
 
 // ─── Space Detail (join page) ─────────────────────────────────────────────────
+declare global {
+  interface Window { Razorpay: any; }
+}
+
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (window.Razorpay) { resolve(true); return; }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload  = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
 function SpaceDetail({ id }: { id: string }) {
   const { user }    = useAuthStore();
   const queryClient = useQueryClient();
   const [roomToken, setRoomToken] = useState<string | null>(null);
   const [myRole, setMyRole]       = useState<string>('listener');
   const [inRoom, setInRoom]       = useState(false);
+  const [joinError, setJoinError] = useState('');
+  const [buyingTicket, setBuyingTicket] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['space', id],
@@ -228,8 +246,44 @@ function SpaceDetail({ id }: { id: string }) {
       setRoomToken(res.data.data.token);
       setMyRole(res.data.data.role);
       setInRoom(true);
+      setJoinError('');
+    },
+    onError: (err: any) => {
+      setJoinError(err.response?.data?.error || 'Could not join Space');
     },
   });
+
+  const handleBuyTicket = async () => {
+    setBuyingTicket(true);
+    try {
+      const loaded = await loadRazorpayScript();
+      if (!loaded) { alert('Could not load payment gateway.'); setBuyingTicket(false); return; }
+
+      const orderRes = await api.post(`/api/spaces/${id}/ticket/order`);
+      const { order_id, amount, key_id } = orderRes.data.data;
+
+      const rzp = new window.Razorpay({
+        key: key_id, order_id, amount, currency: 'INR',
+        name: 'Deemona', description: `Ticket: ${space?.title}`,
+        theme: { color: '#1d9bf0' },
+        handler: async (response: any) => {
+          await api.post(`/api/spaces/${id}/ticket/confirm`, {
+            order_id:   response.razorpay_order_id,
+            payment_id: response.razorpay_payment_id,
+            signature:  response.razorpay_signature,
+          });
+          setJoinError('');
+          joinMutation.mutate();
+          setBuyingTicket(false);
+        },
+        modal: { ondismiss: () => setBuyingTicket(false) },
+      });
+      rzp.open();
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Could not start ticket purchase');
+      setBuyingTicket(false);
+    }
+  };
 
   const space = data?.data?.data;
 
@@ -244,6 +298,8 @@ function SpaceDetail({ id }: { id: string }) {
     }} />;
   }
 
+  const isTicketError = joinError.toLowerCase().includes('ticketed');
+
   return (
     <div className="px-4 py-6 max-w-sm mx-auto text-center">
       <Link to="/spaces" className="text-brand text-sm hover:underline mb-6 block text-left">← All Spaces</Link>
@@ -255,6 +311,11 @@ function SpaceDetail({ id }: { id: string }) {
         <span className="flex items-center gap-1 bg-red-500/10 text-red-500 px-2 py-0.5 rounded-full text-xs font-medium">
           <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />LIVE
         </span>
+        {space.is_ticketed && (
+          <span className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 text-amber-600 px-2 py-0.5 rounded-full text-xs font-medium">
+            <Ticket size={10} />₹{space.ticket_price_paise / 100}
+          </span>
+        )}
       </div>
       <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-1">{space.title}</h1>
       <p className="text-sm text-gray-500 mb-1">Hosted by @{space.host_handle}</p>
@@ -263,11 +324,23 @@ function SpaceDetail({ id }: { id: string }) {
         <span className="flex items-center gap-1"><Mic size={12} />{space.speaker_count} speakers</span>
       </div>
       {space.description && <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">{space.description}</p>}
+
+      {joinError && !isTicketError && (
+        <p className="text-red-500 text-sm bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-xl mb-3">{joinError}</p>
+      )}
+
       {user ? (
-        <button onClick={() => joinMutation.mutate()} disabled={joinMutation.isPending}
-          className="w-full bg-brand hover:bg-brand-dark text-white font-semibold py-3 rounded-full transition-colors disabled:opacity-50">
-          {joinMutation.isPending ? 'Joining…' : 'Join Space'}
-        </button>
+        isTicketError ? (
+          <button onClick={handleBuyTicket} disabled={buyingTicket}
+            className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 rounded-full transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            <Ticket size={16} /> {buyingTicket ? 'Processing…' : `Buy ticket — ₹${space.ticket_price_paise / 100}`}
+          </button>
+        ) : (
+          <button onClick={() => joinMutation.mutate()} disabled={joinMutation.isPending}
+            className="w-full bg-brand hover:bg-brand-dark text-white font-semibold py-3 rounded-full transition-colors disabled:opacity-50">
+            {joinMutation.isPending ? 'Joining…' : 'Join Space'}
+          </button>
+        )
       ) : (
         <p className="text-sm text-gray-500">Sign in to join this Space</p>
       )}
@@ -281,7 +354,10 @@ export default function Spaces() {
   const { user }    = useAuthStore();
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '', category: 'general' });
+  const [form, setForm] = useState({
+    title: '', description: '', category: 'general',
+    is_ticketed: false, ticket_price_inr: 50, is_recorded: false,
+  });
   const [roomToken, setRoomToken]   = useState<string | null>(null);
   const [activeSpace, setActiveSpace] = useState<any>(null);
   const [myRole, setMyRole]           = useState('host');
@@ -292,6 +368,8 @@ export default function Spaces() {
     refetchInterval: 15000,
     enabled:         !id,
   });
+
+  const [createError, setCreateError] = useState('');
 
   const createMutation = useMutation({
     mutationFn: (data: any) => spacesService.create(data),
@@ -306,6 +384,10 @@ export default function Spaces() {
       setMyRole('host');
       queryClient.invalidateQueries({ queryKey: ['spaces'] });
       setShowCreate(false);
+      setCreateError('');
+    },
+    onError: (err: any) => {
+      setCreateError(err.response?.data?.error || 'Could not start Space. Please try again.');
     },
   });
 
@@ -353,6 +435,40 @@ export default function Spaces() {
               <option key={c} value={c} className="capitalize">{c}</option>
             ))}
           </select>
+
+          {/* Premium options */}
+          <div className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-xl p-3 space-y-3">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide flex items-center gap-1">
+              <Crown size={12} className="text-amber-500" /> Premium options
+            </p>
+            <label className="flex items-center justify-between cursor-pointer">
+              <span className="text-sm text-gray-700 dark:text-gray-300">Record &amp; archive this Space</span>
+              <input type="checkbox" checked={form.is_recorded}
+                onChange={e => setForm(f => ({ ...f, is_recorded: e.target.checked }))}
+                className="rounded" />
+            </label>
+            <label className="flex items-center justify-between cursor-pointer">
+              <span className="text-sm text-gray-700 dark:text-gray-300">Ticketed entry</span>
+              <input type="checkbox" checked={form.is_ticketed}
+                onChange={e => setForm(f => ({ ...f, is_ticketed: e.target.checked }))}
+                className="rounded" />
+            </label>
+            {form.is_ticketed && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">₹</span>
+                <input type="number" min={10} value={form.ticket_price_inr}
+                  onChange={e => setForm(f => ({ ...f, ticket_price_inr: Number(e.target.value) }))}
+                  className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-black text-gray-900 dark:text-white outline-none focus:border-brand" />
+                <span className="text-xs text-gray-400">per listener</span>
+              </div>
+            )}
+            <p className="text-xs text-gray-400">Recording and ticketing require a Pro or Enterprise subscription.</p>
+          </div>
+
+          {createError && (
+            <p className="text-red-500 text-sm bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-xl">{createError}</p>
+          )}
+
           <div className="flex gap-2">
             <button onClick={() => createMutation.mutate(form)}
               disabled={!form.title.trim() || createMutation.isPending}
@@ -386,6 +502,14 @@ export default function Spaces() {
                   <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />LIVE
                 </span>
                 <span className="text-xs text-gray-400 capitalize">{space.category}</span>
+                {space.is_ticketed && (
+                  <span className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 text-amber-600 px-2 py-0.5 rounded-full text-xs font-medium">
+                    <Ticket size={10} />₹{space.ticket_price_paise / 100}
+                  </span>
+                )}
+                {space.is_recorded && (
+                  <span className="text-xs text-gray-400" title="This Space will be recorded">●REC</span>
+                )}
               </div>
               <p className="font-semibold text-sm text-gray-900 dark:text-white leading-snug mb-0.5">{space.title}</p>
               <p className="text-xs text-gray-500 mb-2">@{space.host_handle}</p>

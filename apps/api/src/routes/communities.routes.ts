@@ -26,6 +26,18 @@ router.post('/',
 
 router.post('/:slug/join', protect, comm.joinCommunity);
 
+router.patch('/:slug',
+  protect,
+  [
+    body('name').optional().trim().isLength({ min: 2, max: 100 }),
+    body('description').optional().trim().isLength({ max: 500 }),
+    body('brand_color').optional().matches(/^#[0-9A-Fa-f]{6}$/),
+    body('brand_logo_url').optional().isURL(),
+  ],
+  validate,
+  comm.updateCommunity
+);
+
 // ─── Polls ────────────────────────────────────────────────────────────────────
 router.post('/polls',
   protect,

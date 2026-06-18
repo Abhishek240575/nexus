@@ -33,7 +33,7 @@ export interface User {
   location:        string | null;
   website:         string | null;
   verified:        boolean;
-  premium_tier:    'free' | 'pro' | 'creator';
+  premium_tier:    'free' | 'plus' | 'pro' | 'enterprise';
   followers_count: number;
   following_count: number;
   posts_count:     number;

@@ -1,6 +1,6 @@
 import { NavLink, useNavigate }    from 'react-router-dom';
 import { Home, Search, Bell, Mail, Bookmark, User,
-         BarChart2, Users, Radio, Settings, LogOut, Swords, TrendingUp, List, Sun, Moon } from 'lucide-react';
+         BarChart2, Users, Radio, Settings, LogOut, Swords, TrendingUp, List, Sun, Moon, Crown, Gift } from 'lucide-react';
 import { useThemeStore } from '@/stores/theme.store';
 import { useAuthStore }   from '@/stores/auth.store';
 import { authService }    from '@/services/auth.service';
@@ -34,6 +34,8 @@ export default function Sidebar() {
     { to: '/messages',      icon: Mail,      label: 'Messages'      },
     { to: '/bookmarks',     icon: Bookmark,  label: 'Bookmarks'     },
     { to: '/lists',         icon: List,      label: 'Lists'         },
+    { to: '/premium',       icon: Crown,     label: 'Premium'       },
+    { to: '/earnings',      icon: Gift,      label: 'Earnings'      },
     { to: '/communities',   icon: Users,     label: 'Communities'   },
     { to: '/debates',       icon: Swords,      label: 'Debates'       },
     { to: '/trending',      icon: TrendingUp,  label: 'Trending'      },
@@ -52,7 +54,7 @@ export default function Sidebar() {
 
   return (
     <div className="flex flex-col h-full px-3 py-4">
-      <div className="px-3 py-2 mb-2 text-2xl font-bold text-brand">Deemona</div>
+      <div className="px-3 py-2 mb-2 text-2xl font-bold text-brand">Nexus</div>
 
       <nav className="flex-1 space-y-1">
         {navItems.map(({ to, icon: Icon, label, badge }) => (

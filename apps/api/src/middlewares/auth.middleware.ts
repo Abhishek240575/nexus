@@ -24,7 +24,7 @@ export const optionalAuth = (req: Request, res: Response, next: NextFunction): v
 };
 
 // ─── Require premium tier ─────────────────────────────────────────────────────
-export const requirePremium = (tiers: string[] = ['pro', 'creator']) =>
+export const requirePremium = (tiers: string[] = ['plus', 'pro', 'enterprise']) =>
   (req: Request, res: Response, next: NextFunction): void => {
     const user = (req as AuthenticatedRequest).user;
     if (!user || !tiers.includes(user.premium_tier)) {
