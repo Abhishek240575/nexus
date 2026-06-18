@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link }  from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -24,7 +24,7 @@ const spacesService = {
   promote:      (id: string, userId: string) => api.post(`/api/spaces/${id}/promote/${userId}`),
 };
 
-// ─── In-Room UI ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ In-Room UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function SpaceRoom({ space, token, role, onLeave }: {
   space: any; token: string; role: string; onLeave: () => void;
 }) {
@@ -61,9 +61,8 @@ function SpaceRoom({ space, token, role, onLeave }: {
         if (reason === 'leave' || reason === 'kicked' || reason === 'room_deleted') {
           onLeave();
         }
-        // On network hiccup or token expiry — don't close, LiveKit will reconnect
+        // On network hiccup or token expiry â€” don't close, LiveKit will reconnect
       }}
-      options={{ reconnectPolicy: { maxRetries: 5 } }}
     >
       <RoomAudioRenderer />
       <div className="flex flex-col h-screen max-h-screen bg-gray-950">
@@ -125,7 +124,7 @@ function SpaceRoom({ space, token, role, onLeave }: {
           </div>
           <p className="text-center text-xs text-gray-500 mt-2">
             {role === 'host' ? 'You are the host' : role === 'speaker' ? 'You are a speaker' : 'You are listening'}
-            {handRaised && ' · Hand raised ✋'}
+            {handRaised && ' Â· Hand raised âœ‹'}
           </p>
         </div>
       </div>
@@ -153,7 +152,7 @@ function ParticipantGrid({ spaceId, hostId, myRole }: { spaceId: string; hostId:
   return (
     <div>
       {/* Speakers */}
-      <p className="text-xs text-gray-500 mb-3">Speakers · {speakers.length}</p>
+      <p className="text-xs text-gray-500 mb-3">Speakers Â· {speakers.length}</p>
       <div className="grid grid-cols-3 gap-4 mb-6">
         {speakers.map((p: any) => (
           <div key={p.user_id} className="flex flex-col items-center gap-2">
@@ -178,7 +177,7 @@ function ParticipantGrid({ spaceId, hostId, myRole }: { spaceId: string; hostId:
       {/* Hand raisers */}
       {handRaisers.length > 0 && myRole === 'host' && (
         <div className="mb-4">
-          <p className="text-xs text-yellow-400 mb-2">✋ Raised hands · {handRaisers.length}</p>
+          <p className="text-xs text-yellow-400 mb-2">âœ‹ Raised hands Â· {handRaisers.length}</p>
           {handRaisers.map((p: any) => (
             <div key={p.user_id} className="flex items-center justify-between py-2 border-b border-gray-800">
               <div className="flex items-center gap-2">
@@ -196,7 +195,7 @@ function ParticipantGrid({ spaceId, hostId, myRole }: { spaceId: string; hostId:
       )}
 
       {/* Listeners */}
-      <p className="text-xs text-gray-500 mb-3">Listeners · {listeners.length}</p>
+      <p className="text-xs text-gray-500 mb-3">Listeners Â· {listeners.length}</p>
       <div className="flex flex-wrap gap-2">
         {listeners.map((p: any) => (
           <div key={p.user_id} className="flex flex-col items-center gap-1">
@@ -210,7 +209,7 @@ function ParticipantGrid({ spaceId, hostId, myRole }: { spaceId: string; hostId:
   );
 }
 
-// ─── Space Detail (join page) ─────────────────────────────────────────────────
+// â”€â”€â”€ Space Detail (join page) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 declare global {
   interface Window { Razorpay: any; }
 }
@@ -302,7 +301,7 @@ function SpaceDetail({ id }: { id: string }) {
 
   return (
     <div className="px-4 py-6 max-w-sm mx-auto text-center">
-      <Link to="/spaces" className="text-brand text-sm hover:underline mb-6 block text-left">← All Spaces</Link>
+      <Link to="/spaces" className="text-brand text-sm hover:underline mb-6 block text-left">â† All Spaces</Link>
       <div className="w-20 h-20 rounded-full bg-brand mx-auto flex items-center justify-center mb-4">
         <img src={space.host_avatar || `https://ui-avatars.com/api/?name=${space.host_handle}&background=1d9bf0&color=fff&size=80`}
           className="w-full h-full rounded-full object-cover" alt={space.host_handle} />
@@ -313,7 +312,7 @@ function SpaceDetail({ id }: { id: string }) {
         </span>
         {space.is_ticketed && (
           <span className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 text-amber-600 px-2 py-0.5 rounded-full text-xs font-medium">
-            <Ticket size={10} />₹{space.ticket_price_paise / 100}
+            <Ticket size={10} />â‚¹{space.ticket_price_paise / 100}
           </span>
         )}
       </div>
@@ -333,12 +332,12 @@ function SpaceDetail({ id }: { id: string }) {
         isTicketError ? (
           <button onClick={handleBuyTicket} disabled={buyingTicket}
             className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 rounded-full transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-            <Ticket size={16} /> {buyingTicket ? 'Processing…' : `Buy ticket — ₹${space.ticket_price_paise / 100}`}
+            <Ticket size={16} /> {buyingTicket ? 'Processingâ€¦' : `Buy ticket â€” â‚¹${space.ticket_price_paise / 100}`}
           </button>
         ) : (
           <button onClick={() => joinMutation.mutate()} disabled={joinMutation.isPending}
             className="w-full bg-brand hover:bg-brand-dark text-white font-semibold py-3 rounded-full transition-colors disabled:opacity-50">
-            {joinMutation.isPending ? 'Joining…' : 'Join Space'}
+            {joinMutation.isPending ? 'Joiningâ€¦' : 'Join Space'}
           </button>
         )
       ) : (
@@ -348,7 +347,7 @@ function SpaceDetail({ id }: { id: string }) {
   );
 }
 
-// ─── Main Spaces page ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Spaces page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function Spaces() {
   const { id }      = useParams<{ id?: string }>();
   const { user }    = useAuthStore();
@@ -455,7 +454,7 @@ export default function Spaces() {
             </label>
             {form.is_ticketed && (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">₹</span>
+                <span className="text-sm text-gray-500">â‚¹</span>
                 <input type="number" min={10} value={form.ticket_price_inr}
                   onChange={e => setForm(f => ({ ...f, ticket_price_inr: Number(e.target.value) }))}
                   className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-black text-gray-900 dark:text-white outline-none focus:border-brand" />
@@ -473,7 +472,7 @@ export default function Spaces() {
             <button onClick={() => createMutation.mutate(form)}
               disabled={!form.title.trim() || createMutation.isPending}
               className="bg-brand text-white px-5 py-2 rounded-full text-sm font-medium disabled:opacity-50 hover:bg-brand-dark transition-colors">
-              {createMutation.isPending ? 'Starting…' : '🎙️ Go Live'}
+              {createMutation.isPending ? 'Startingâ€¦' : 'ðŸŽ™ï¸ Go Live'}
             </button>
             <button onClick={() => setShowCreate(false)} className="px-4 py-2 rounded-full text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Cancel</button>
           </div>
@@ -504,11 +503,11 @@ export default function Spaces() {
                 <span className="text-xs text-gray-400 capitalize">{space.category}</span>
                 {space.is_ticketed && (
                   <span className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 text-amber-600 px-2 py-0.5 rounded-full text-xs font-medium">
-                    <Ticket size={10} />₹{space.ticket_price_paise / 100}
+                    <Ticket size={10} />â‚¹{space.ticket_price_paise / 100}
                   </span>
                 )}
                 {space.is_recorded && (
-                  <span className="text-xs text-gray-400" title="This Space will be recorded">●REC</span>
+                  <span className="text-xs text-gray-400" title="This Space will be recorded">â—REC</span>
                 )}
               </div>
               <p className="font-semibold text-sm text-gray-900 dark:text-white leading-snug mb-0.5">{space.title}</p>
