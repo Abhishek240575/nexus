@@ -1,395 +1,288 @@
 import { Request, Response } from 'express';
-import { db }  from '../config/db';
-import * as R  from '../utils/response';
-import { AuthenticatedRequest } from '../types';
+import pool from '../config/database';
 
-// ─── Helper: get tier features for current user ───────────────────────────────
-async function getTierFeatures(userId: string) {
-  const { rows } = await db.query(
-    `SELECT u.premium_tier, t.features, t.max_post_length
-     FROM users u LEFT JOIN subscription_tiers t ON t.id = u.premium_tier
-     WHERE u.id = $1`,
-    [userId]
-  );
-  return {
-    tier:     rows[0]?.premium_tier || 'free',
-    features: rows[0]?.features    || {},
-  };
-}
-
-// ─── Post analytics overview ──────────────────────────────────────────────────
-// Free:  totals only, 28-day window
-// Plus+: totals + daily breakdown + top posts, 90-day window
-// Pro+:  everything above + demographic estimates + extended history
-export const getPostAnalytics = async (req: Request, res: Response): Promise<void> => {
-  const { id: userId } = (req as AuthenticatedRequest).user;
-  const { tier, features } = await getTierFeatures(userId);
-
-  const isAdvanced = features.analytics === 'advanced'; // Plus, Pro, Enterprise
-  const isPro      = ['pro', 'enterprise'].includes(tier);
-
-  // Pro+ can request up to 365 days; Plus up to 90; Free locked to 28
-  const requestedDays = Number(req.query.days) || 28;
-  const maxDays = isPro ? 365 : isAdvanced ? 90 : 28;
-  const days    = Math.min(requestedDays, maxDays);
-
-  // Always return totals
-  const { rows: totals } = await db.query(
-    `SELECT
-       COALESCE(SUM(p.views_count), 0)   AS total_impressions,
-       COALESCE(SUM(p.likes_count), 0)   AS total_likes,
-       COALESCE(SUM(p.reposts_count), 0) AS total_reposts,
-       COALESCE(SUM(p.replies_count), 0) AS total_replies,
-       COUNT(*)                           AS total_posts
-     FROM posts p
-     WHERE p.user_id = $1
-       AND p.is_published = TRUE
-       AND p.created_at >= NOW() - ($2 || ' days')::INTERVAL`,
-    [userId, days]
-  );
-
-  const total = totals[0];
-  const engagementRate = total.total_impressions > 0
-    ? ((Number(total.total_likes) + Number(total.total_reposts) + Number(total.total_replies)) / Number(total.total_impressions) * 100).toFixed(2)
-    : '0.00';
-
-  // Free tier: return basic summary only
-  if (!isAdvanced) {
-    return R.ok(res, {
-      tier,
-      period_days:     days,
-      max_days:        maxDays,
-      upgrade_message: 'Upgrade to Plus to unlock daily breakdown, top posts, and 90-day history.',
-      totals:          { ...total, engagement_rate: engagementRate },
-      daily_breakdown: null,
-      top_posts:       null,
-      demographic_note: null,
+export class AnalyticsController {
+  /**
+   * GET /api/v1/analytics/test
+   */
+  async test(req: Request, res: Response): Promise<void> {
+    res.json({
+      success: true,
+      message: 'Analytics routes are working!',
+      timestamp: new Date().toISOString(),
     });
   }
 
-  // Plus+: daily breakdown + top posts
-  const { rows: daily } = await db.query(
-    `SELECT
-       DATE(p.created_at) AS date,
-       COALESCE(SUM(p.views_count), 0)   AS impressions,
-       COALESCE(SUM(p.likes_count), 0)   AS likes,
-       COALESCE(SUM(p.reposts_count), 0) AS reposts,
-       COUNT(*)                           AS posts
-     FROM posts p
-     WHERE p.user_id = $1
-       AND p.is_published = TRUE
-       AND p.created_at >= NOW() - ($2 || ' days')::INTERVAL
-     GROUP BY DATE(p.created_at)
-     ORDER BY date ASC`,
-    [userId, days]
-  );
+  /**
+   * GET /api/v1/analytics/summary
+   */
+  async getSummary(req: Request, res: Response): Promise<void> {
+    try {
+      // Total reports
+      const totalResult = await pool.query('SELECT COUNT(*) as total FROM reports_master WHERE is_active = true');
+      const total = parseInt(totalResult.rows[0].total);
 
-  const { rows: topPosts } = await db.query(
-    `SELECT p.id, p.content, p.views_count, p.likes_count,
-            p.reposts_count, p.replies_count, p.created_at
-     FROM posts p
-     WHERE p.user_id = $1 AND p.is_published = TRUE
-     ORDER BY p.views_count DESC
-     LIMIT 5`,
-    [userId]
-  );
+      // Reports by domain
+      const domainResult = await pool.query(`
+        SELECT d.name, COUNT(r.report_id) as count
+        FROM reports_master r
+        JOIN domains d ON r.domain_id = d.domain_id
+        WHERE r.is_active = true
+        GROUP BY d.name
+        ORDER BY count DESC
+        LIMIT 5
+      `);
 
-  // Pro+: best-performing hashtags and reach estimate
-  let hashtagPerformance = null;
-  let reachEstimate      = null;
-  if (isPro) {
-    const { rows: hashtagPerf } = await db.query(
-      `SELECT h.name, COUNT(ph.post_id) AS usage_count,
-              SUM(p.views_count) AS total_impressions,
-              SUM(p.likes_count) AS total_likes,
-              ROUND(SUM(p.likes_count)::numeric / NULLIF(SUM(p.views_count), 0) * 100, 2) AS like_rate
-       FROM post_hashtags ph
-       JOIN hashtags h ON h.id = ph.hashtag_id
-       JOIN posts p ON p.id = ph.post_id
-       WHERE p.user_id = $1 AND p.is_published = TRUE
-         AND p.created_at >= NOW() - ($2 || ' days')::INTERVAL
-       GROUP BY h.name
-       ORDER BY total_impressions DESC
-       LIMIT 10`,
-      [userId, days]
-    );
-    hashtagPerformance = hashtagPerf;
+      // Reports by compliance
+      const complianceResult = await pool.query(`
+        SELECT compliance_status as name, COUNT(report_id) as count
+        FROM reports_master
+        WHERE is_active = true
+        GROUP BY compliance_status
+      `);
 
-    // Estimate unique reach based on follower count + repost amplification
-    const { rows: reachRow } = await db.query(
-      `SELECT
-         u.followers_count,
-         COALESCE(SUM(p.reposts_count), 0) AS total_reposts,
-         COALESCE(SUM(p.views_count), 0)    AS total_views
-       FROM users u
-       LEFT JOIN posts p ON p.user_id = u.id AND p.is_published = TRUE
-         AND p.created_at >= NOW() - ($2 || ' days')::INTERVAL
-       WHERE u.id = $1
-       GROUP BY u.followers_count`,
-      [userId, days]
-    );
-    if (reachRow[0]) {
-      const r = reachRow[0];
-      reachEstimate = {
-        followers:         Number(r.followers_count),
-        estimated_reach:   Math.round(Number(r.total_views) * 1.15), // views + repost amplification
-        repost_amplification: Number(r.total_reposts),
-      };
+      // Recent activity (last 30 days)
+      const recentResult = await pool.query(`
+        SELECT COUNT(*) as count
+        FROM reports_master
+        WHERE created_at >= NOW() - INTERVAL '30 days'
+        AND is_active = true
+      `);
+
+      res.json({
+        totalReports: total,
+        topDomains: domainResult.rows,
+        complianceBreakdown: complianceResult.rows,
+        recentReports: parseInt(recentResult.rows[0].count),
+      });
+    } catch (error) {
+      console.error('Error fetching analytics summary:', error);
+      res.status(500).json({ error: 'Failed to fetch analytics summary' });
     }
   }
 
-  R.ok(res, {
-    tier,
-    period_days:         days,
-    max_days:            maxDays,
-    totals:              { ...total, engagement_rate: engagementRate },
-    daily_breakdown:     daily,
-    top_posts:           topPosts,
-    hashtag_performance: hashtagPerformance,
-    reach_estimate:      reachEstimate,
-  });
-};
+  /**
+   * GET /api/v1/analytics/reports-by-domain
+   */
+  async getReportsByDomain(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await pool.query(`
+        SELECT 
+          d.name as domain,
+          COUNT(r.report_id) as count,
+          d.color
+        FROM reports_master r
+        JOIN domains d ON r.domain_id = d.domain_id
+        WHERE r.is_active = true
+        GROUP BY d.domain_id, d.name, d.color
+        ORDER BY count DESC
+      `);
 
-// ─── Profile / follower analytics ────────────────────────────────────────────
-export const getProfileAnalytics = async (req: Request, res: Response): Promise<void> => {
-  const { id: userId } = (req as AuthenticatedRequest).user;
-  const { features } = await getTierFeatures(userId);
-  const isAdvanced = features.analytics === 'advanced';
-
-  const { rows: user } = await db.query(
-    `SELECT handle, display_name, followers_count, following_count,
-            posts_count, verified, premium_tier, created_at
-     FROM users WHERE id = $1`,
-    [userId]
-  );
-
-  const { rows: followerGrowth } = await db.query(
-    `SELECT DATE(created_at) AS date, COUNT(*) AS new_followers
-     FROM follows
-     WHERE following_id = $1
-       AND created_at >= NOW() - INTERVAL '30 days'
-     GROUP BY DATE(created_at)
-     ORDER BY date ASC`,
-    [userId]
-  );
-
-  const { rows: recentFollowers } = await db.query(
-    `SELECT u.id, u.handle, u.display_name, u.avatar_url, u.verified, f.created_at
-     FROM follows f JOIN users u ON u.id = f.follower_id
-     WHERE f.following_id = $1
-     ORDER BY f.created_at DESC
-     LIMIT 10`,
-    [userId]
-  );
-
-  const { rows: visits } = await db.query(
-    `SELECT COALESCE(SUM(views_count), 0) AS total_profile_views
-     FROM posts WHERE user_id = $1 AND is_published = TRUE`,
-    [userId]
-  );
-
-  R.ok(res, {
-    profile:             user[0],
-    follower_growth:     followerGrowth,
-    recent_followers:    recentFollowers,
-    total_profile_views: visits[0]?.total_profile_views || 0,
-    ...(!isAdvanced && { upgrade_message: 'Upgrade to Plus for detailed follower demographics and growth trends.' }),
-  });
-};
-
-// ─── Top hashtags used by creator ────────────────────────────────────────────
-export const getHashtagAnalytics = async (req: Request, res: Response): Promise<void> => {
-  const { id: userId } = (req as AuthenticatedRequest).user;
-  const { features }   = await getTierFeatures(userId);
-  const isAdvanced     = features.analytics === 'advanced';
-  const window         = isAdvanced ? 90 : 30;
-
-  const { rows } = await db.query(
-    `SELECT h.name, COUNT(ph.post_id) AS usage_count,
-            SUM(p.views_count) AS total_impressions,
-            SUM(p.likes_count) AS total_likes
-     FROM post_hashtags ph
-     JOIN hashtags h ON h.id = ph.hashtag_id
-     JOIN posts p ON p.id = ph.post_id
-     WHERE p.user_id = $1 AND p.is_published = TRUE
-       AND p.created_at >= NOW() - ($2 || ' days')::INTERVAL
-     GROUP BY h.name
-     ORDER BY total_impressions DESC
-     LIMIT 10`,
-    [userId, window]
-  );
-
-  R.ok(res, { window_days: window, hashtags: rows });
-};
-
-// ─── Hashtag velocity history (Pro+ only — beyond 7 days) ────────────────────
-export const getHashtagVelocityHistory = async (req: Request, res: Response): Promise<void> => {
-  const { id: userId } = (req as AuthenticatedRequest).user;
-  const { tier, features } = await getTierFeatures(userId);
-  const isPro = ['pro', 'enterprise'].includes(tier);
-
-  if (!isPro) {
-    return R.forbidden(res, 'Hashtag velocity history beyond 7 days requires a Pro or Enterprise subscription. Upgrade at /premium.');
+      res.json({
+        labels: result.rows.map(row => row.domain),
+        values: result.rows.map(row => parseInt(row.count)),
+        colors: result.rows.map(row => row.color || '#3B82F6'),
+      });
+    } catch (error) {
+      console.error('Error fetching reports by domain:', error);
+      res.status(500).json({ error: 'Failed to fetch domain statistics' });
+    }
   }
 
-  const { hashtag } = req.params;
-  const days = Math.min(Number(req.query.days) || 30, 365);
+  /**
+   * GET /api/v1/analytics/reports-by-frequency
+   */
+  async getReportsByFrequency(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await pool.query(`
+        SELECT 
+          frequency,
+          COUNT(report_id) as count
+        FROM reports_master
+        WHERE is_active = true
+        GROUP BY frequency
+        ORDER BY 
+          CASE frequency
+            WHEN 'Daily' THEN 1
+            WHEN 'Weekly' THEN 2
+            WHEN 'Monthly' THEN 3
+            WHEN 'Quarterly' THEN 4
+            WHEN 'Annually' THEN 5
+            ELSE 6
+          END
+      `);
 
-  const { rows } = await db.query(
-    `SELECT region, post_count, recorded_at
-     FROM hashtag_velocity_history
-     WHERE hashtag = $1
-       AND recorded_at >= NOW() - ($2 || ' days')::INTERVAL
-     ORDER BY recorded_at ASC`,
-    [hashtag, days]
-  );
+      res.json({
+        labels: result.rows.map(row => row.frequency),
+        values: result.rows.map(row => parseInt(row.count)),
+      });
+    } catch (error) {
+      console.error('Error fetching reports by frequency:', error);
+      res.status(500).json({ error: 'Failed to fetch frequency statistics' });
+    }
+  }
 
-  // Also get current 7-day live stats for comparison
-  const { rows: live } = await db.query(
-    `SELECT
-       COUNT(*) AS total_posts,
-       COUNT(DISTINCT p.user_id) AS unique_authors,
-       SUM(p.likes_count) AS total_likes
-     FROM post_hashtags ph
-     JOIN hashtags h ON h.id = ph.hashtag_id
-     JOIN posts p ON p.id = ph.post_id
-     WHERE h.name = $1
-       AND p.created_at >= NOW() - INTERVAL '7 days'
-       AND p.is_published = TRUE`,
-    [hashtag]
-  );
+  /**
+   * GET /api/v1/analytics/reports-by-compliance
+   */
+  async getReportsByCompliance(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await pool.query(`
+        SELECT 
+          compliance_status,
+          COUNT(report_id) as count,
+          CASE compliance_status
+            WHEN 'Required' THEN '#EF4444'
+            WHEN 'Optional' THEN '#10B981'
+            WHEN 'Recommended' THEN '#F59E0B'
+            ELSE '#6B7280'
+          END as color
+        FROM reports_master
+        WHERE is_active = true
+        GROUP BY compliance_status
+        ORDER BY compliance_status
+      `);
 
-  R.ok(res, {
-    hashtag,
-    days_requested:  days,
-    history:         rows,
-    current_7d_live: live[0],
-    note:            rows.length === 0 ? 'No historical snapshots recorded yet. History builds as the cron job runs hourly.' : null,
-  });
-};
+      res.json({
+        labels: result.rows.map(row => row.compliance_status),
+        values: result.rows.map(row => parseInt(row.count)),
+        colors: result.rows.map(row => row.color),
+      });
+    } catch (error) {
+      console.error('Error fetching reports by compliance:', error);
+      res.status(500).json({ error: 'Failed to fetch compliance statistics' });
+    }
+  }
 
-  // Total impressions, likes, reposts, replies in period
-  const { rows: totals } = await db.query(
-    `SELECT
-       COALESCE(SUM(p.views_count), 0)   AS total_impressions,
-       COALESCE(SUM(p.likes_count), 0)   AS total_likes,
-       COALESCE(SUM(p.reposts_count), 0) AS total_reposts,
-       COALESCE(SUM(p.replies_count), 0) AS total_replies,
-       COUNT(*)                           AS total_posts
-     FROM posts p
-     WHERE p.user_id = $1
-       AND p.is_published = TRUE
-       AND p.created_at >= NOW() - ($2 || ' days')::INTERVAL`,
-    [userId, days]
-  );
+  /**
+   * GET /api/v1/analytics/submission-trends
+   */
+  async getSubmissionTrends(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await pool.query(`
+        SELECT 
+          TO_CHAR(created_at, 'YYYY-MM') as month,
+          COUNT(*) as count
+        FROM reports_master
+        WHERE created_at >= NOW() - INTERVAL '12 months'
+        AND is_active = true
+        GROUP BY TO_CHAR(created_at, 'YYYY-MM')
+        ORDER BY month
+      `);
 
-  // Daily impressions for chart
-  const { rows: daily } = await db.query(
-    `SELECT
-       DATE(p.created_at) AS date,
-       COALESCE(SUM(p.views_count), 0)   AS impressions,
-       COALESCE(SUM(p.likes_count), 0)   AS likes,
-       COALESCE(SUM(p.reposts_count), 0) AS reposts,
-       COUNT(*)                           AS posts
-     FROM posts p
-     WHERE p.user_id = $1
-       AND p.is_published = TRUE
-       AND p.created_at >= NOW() - ($2 || ' days')::INTERVAL
-     GROUP BY DATE(p.created_at)
-     ORDER BY date ASC`,
-    [userId, days]
-  );
+      res.json({
+        labels: result.rows.map(row => row.month),
+        values: result.rows.map(row => parseInt(row.count)),
+      });
+    } catch (error) {
+      console.error('Error fetching submission trends:', error);
+      res.status(500).json({ error: 'Failed to fetch submission trends' });
+    }
+  }
 
-  // Top posts by impressions
-  const { rows: topPosts } = await db.query(
-    `SELECT p.id, p.content, p.views_count, p.likes_count,
-            p.reposts_count, p.replies_count, p.created_at
-     FROM posts p
-     WHERE p.user_id = $1 AND p.is_published = TRUE
-     ORDER BY p.views_count DESC
-     LIMIT 5`,
-    [userId]
-  );
+  /**
+   * GET /api/v1/analytics/reports-by-stakeholder
+   */
+  async getReportsByStakeholder(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await pool.query(`
+        SELECT 
+          stakeholder,
+          COUNT(*) as count
+        FROM (
+          SELECT jsonb_array_elements_text(stakeholders) as stakeholder
+          FROM reports_master
+          WHERE is_active = true
+          AND jsonb_array_length(stakeholders) > 0
+        ) s
+        GROUP BY stakeholder
+        ORDER BY count DESC
+        LIMIT 10
+      `);
 
-  // Engagement rate
-  const total = totals[0];
-  const engagementRate = total.total_impressions > 0
-    ? ((Number(total.total_likes) + Number(total.total_reposts) + Number(total.total_replies)) / Number(total.total_impressions) * 100).toFixed(2)
-    : '0.00';
+      res.json({
+        labels: result.rows.map(row => row.stakeholder),
+        values: result.rows.map(row => parseInt(row.count)),
+      });
+    } catch (error) {
+      console.error('Error fetching reports by stakeholder:', error);
+      res.status(500).json({ error: 'Failed to fetch stakeholder statistics' });
+    }
+  }
 
-  R.ok(res, {
-    period_days:      days,
-    totals:           { ...total, engagement_rate: engagementRate },
-    daily_breakdown:  daily,
-    top_posts:        topPosts,
-  });
-};
+  /**
+   * GET /api/v1/analytics/frequency-distribution
+   */
+  async getFrequencyDistribution(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await pool.query(`
+        WITH freq_counts AS (
+          SELECT 
+            frequency,
+            COUNT(report_id) as count
+          FROM reports_master
+          WHERE is_active = true
+          GROUP BY frequency
+        ),
+        total AS (
+          SELECT SUM(count) as total_count FROM freq_counts
+        )
+        SELECT 
+          fc.frequency,
+          fc.count,
+          ROUND((fc.count::numeric / t.total_count * 100), 2) as percentage
+        FROM freq_counts fc, total t
+        ORDER BY fc.count DESC
+      `);
 
-// ─── Profile / follower analytics ────────────────────────────────────────────
-export const getProfileAnalytics = async (req: Request, res: Response): Promise<void> => {
-  const { id: userId } = (req as AuthenticatedRequest).user;
+      res.json(result.rows);
+    } catch (error) {
+      console.error('Error fetching frequency distribution:', error);
+      res.status(500).json({ error: 'Failed to fetch frequency distribution' });
+    }
+  }
 
-  const { rows: user } = await db.query(
-    `SELECT handle, display_name, followers_count, following_count,
-            posts_count, verified, premium_tier, created_at
-     FROM users WHERE id = $1`,
-    [userId]
-  );
+  /**
+   * GET /api/v1/analytics/compliance-metrics
+   */
+  async getComplianceMetrics(req: Request, res: Response): Promise<void> {
+    try {
+      // Current compliance distribution
+      const current = await pool.query(`
+        SELECT 
+          compliance_status as name,
+          COUNT(report_id) as count,
+          CASE compliance_status
+            WHEN 'Required' THEN '#EF4444'
+            WHEN 'Optional' THEN '#10B981'
+            WHEN 'Recommended' THEN '#F59E0B'
+            ELSE '#6B7280'
+          END as color
+        FROM reports_master
+        WHERE is_active = true
+        GROUP BY compliance_status
+      `);
 
-  // New followers last 30 days (approximation via join date)
-  const { rows: followerGrowth } = await db.query(
-    `SELECT DATE(created_at) AS date, COUNT(*) AS new_followers
-     FROM follows
-     WHERE following_id = $1
-       AND created_at >= NOW() - INTERVAL '30 days'
-     GROUP BY DATE(created_at)
-     ORDER BY date ASC`,
-    [userId]
-  );
+      // Compliance rate over time (last 6 months)
+      const trends = await pool.query(`
+        SELECT 
+          TO_CHAR(created_at, 'YYYY-MM') as month,
+          compliance_status as status,
+          COUNT(*) as count
+        FROM reports_master
+        WHERE created_at >= NOW() - INTERVAL '6 months'
+        AND is_active = true
+        GROUP BY TO_CHAR(created_at, 'YYYY-MM'), compliance_status
+        ORDER BY month, compliance_status
+      `);
 
-  // Who followed recently
-  const { rows: recentFollowers } = await db.query(
-    `SELECT u.id, u.handle, u.display_name, u.avatar_url, u.verified, f.created_at
-     FROM follows f JOIN users u ON u.id = f.follower_id
-     WHERE f.following_id = $1
-     ORDER BY f.created_at DESC
-     LIMIT 10`,
-    [userId]
-  );
-
-  // Profile visits (from post views as proxy)
-  const { rows: visits } = await db.query(
-    `SELECT COALESCE(SUM(views_count), 0) AS total_profile_views
-     FROM posts WHERE user_id = $1 AND is_published = TRUE`,
-    [userId]
-  );
-
-  R.ok(res, {
-    profile:          user[0],
-    follower_growth:  followerGrowth,
-    recent_followers: recentFollowers,
-    total_profile_views: visits[0]?.total_profile_views || 0,
-  });
-};
-
-// ─── Top hashtags used by creator ────────────────────────────────────────────
-export const getHashtagAnalytics = async (req: Request, res: Response): Promise<void> => {
-  const { id: userId } = (req as AuthenticatedRequest).user;
-
-  const { rows } = await db.query(
-    `SELECT h.name, COUNT(ph.post_id) AS usage_count,
-            SUM(p.views_count) AS total_impressions,
-            SUM(p.likes_count) AS total_likes
-     FROM post_hashtags ph
-     JOIN hashtags h ON h.id = ph.hashtag_id
-     JOIN posts p ON p.id = ph.post_id
-     WHERE p.user_id = $1 AND p.is_published = TRUE
-       AND p.created_at >= NOW() - INTERVAL '30 days'
-     GROUP BY h.name
-     ORDER BY total_impressions DESC
-     LIMIT 10`,
-    [userId]
-  );
-
-  R.ok(res, rows);
-};
+      res.json({
+        current: current.rows,
+        trends: trends.rows,
+      });
+    } catch (error) {
+      console.error('Error fetching compliance metrics:', error);
+      res.status(500).json({ error: 'Failed to fetch compliance metrics' });
+    }
+  }
+}
