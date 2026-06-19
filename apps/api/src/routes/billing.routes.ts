@@ -16,6 +16,17 @@ router.post('/checkout',
   ctrl.createSubscriptionCheckout
 );
 
+router.post('/verify',
+  protect,
+  [
+    body('razorpay_payment_id').notEmpty(),
+    body('razorpay_subscription_id').notEmpty(),
+    body('razorpay_signature').notEmpty(),
+  ],
+  validate,
+  ctrl.verifySubscriptionPayment
+);
+
 router.post('/cancel',            protect, ctrl.cancelSubscription);
 
 // Webhook — no auth middleware (Razorpay signs requests instead)

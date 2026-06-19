@@ -4,6 +4,7 @@ import * as R  from '../utils/response';
 import { AuthenticatedRequest } from '../types';
 import * as razorpayService from '../services/razorpay.service';
 import { logAudit } from '../services/audit.service';
+import { awardBadge } from '../services/badges.service';
 
 // ─── Get all available tiers (public pricing page) ───────────────────────────
 export const getTiers = async (req: Request, res: Response): Promise<void> => {
@@ -75,7 +76,12 @@ export const createSubscriptionCheckout = async (req: Request, res: Response): P
 
     await logAudit({ userId, actorId: userId, action: 'subscription.checkout_started', details: { tier_id, razorpaySubscriptionId } });
 
-    R.created(res, { subscription: rows[0], checkout_url: shortUrl, razorpay_subscription_id: razorpaySubscriptionId });
+    R.created(res, {
+      subscription:            rows[0],
+      checkout_url:            shortUrl,
+      razorpay_subscription_id: razorpaySubscriptionId,
+      razorpay_key_id:         process.env.RAZORPAY_KEY_ID,
+    });
   } catch (err: any) {
     console.error('[Billing] Checkout creation failed:', err.message);
     R.serverError(res, 'Could not start checkout. Please try again.');
@@ -212,9 +218,70 @@ async function expireSubscription(razorpaySubscriptionId: string) {
 async function maybeAwardEarlySupporter(userId: string) {
   const { rows } = await db.query(`SELECT COUNT(*) AS count FROM subscriptions WHERE status IN ('active','expired')`);
   if (Number(rows[0].count) <= 1000) {
-    await db.query(
-      `INSERT INTO user_badges (user_id, badge_id) VALUES ($1, 'early_supporter') ON CONFLICT DO NOTHING`,
-      [userId]
-    );
+    await awardBadge(userId, 'early_supporter');
   }
 }
+
+// ─── Verify subscription payment (called after Razorpay checkout completes) ──
+// Provides immediate activation without waiting for webhook
+export const verifySubscriptionPayment = async (req: Request, res: Response): Promise<void> => {
+  const { id: userId } = (req as AuthenticatedRequest).user;
+  const { razorpay_payment_id, razorpay_subscription_id, razorpay_signature } = req.body;
+
+  if (!razorpay_payment_id || !razorpay_subscription_id || !razorpay_signature) {
+    R.badRequest(res, 'Missing payment verification fields'); return;
+  }
+
+  // Verify signature: HMAC-SHA256 of payment_id + '|' + subscription_id
+  const crypto = require('crypto');
+  const expected = crypto
+    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || '')
+    .update(`${razorpay_payment_id}|${razorpay_subscription_id}`)
+    .digest('hex');
+
+  if (expected !== razorpay_signature) {
+    R.badRequest(res, 'Payment verification failed — invalid signature'); return;
+  }
+
+  // Activate subscription immediately (webhook will also fire but that's idempotent)
+  const { rows } = await db.query(
+    `UPDATE subscriptions SET status = 'active', updated_at = NOW()
+     WHERE razorpay_subscription_id = $1 AND user_id = $2
+     RETURNING id, tier_id`,
+    [razorpay_subscription_id, userId]
+  );
+
+  if (!rows[0]) {
+    R.notFound(res, 'Subscription not found'); return;
+  }
+
+  const { tier_id } = rows[0];
+
+  // Update user tier and verified status immediately
+  await db.query(
+    'UPDATE users SET premium_tier = $1, verified = TRUE WHERE id = $2',
+    [tier_id, userId]
+  );
+
+  // Record the payment
+  await db.query(
+    `INSERT INTO payment_transactions
+       (user_id, subscription_id, razorpay_payment_id, amount_inr_paise, status, purpose)
+     SELECT $1, $2, $3,
+       (SELECT price_inr_paise FROM subscription_tiers WHERE id = $4),
+       'captured', 'subscription'`,
+    [userId, rows[0].id, razorpay_payment_id, tier_id]
+  );
+
+  // Award Early Supporter badge
+  await maybeAwardEarlySupporter(userId);
+
+  await logAudit({
+    userId,
+    actorId: userId,
+    action: 'subscription.activated',
+    details: { tier_id, razorpay_subscription_id, razorpay_payment_id },
+  });
+
+  R.ok(res, { activated: true, tier_id, message: `Welcome to Deemona ${tier_id.charAt(0).toUpperCase() + tier_id.slice(1)}!` });
+};
