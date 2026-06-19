@@ -54,10 +54,12 @@ export default function Analytics() {
     staleTime: 1000 * 60 * 5,
   });
 
-  const posts   = postsData?.data?.data;
-  const profile = profileData?.data?.data;
-  const hashtags = hashtagData?.data?.data ?? [];
+  const posts    = postsData?.data?.data;
+  const profile  = profileData?.data?.data;
+  const hashtags = hashtagData?.data?.data?.hashtags ?? hashtagData?.data?.data ?? [];
 
+  const isAdvanced = posts?.tier && posts.tier !== 'free';
+  const isPro      = posts?.tier && ['pro', 'enterprise'].includes(posts.tier);
   const maxImpressions = Math.max(...(posts?.daily_breakdown ?? []).map((d: any) => Number(d.impressions)), 1);
 
   return (
@@ -69,7 +71,8 @@ export default function Analytics() {
             className="text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 bg-white dark:bg-black text-gray-900 dark:text-white outline-none">
             <option value={7}>Last 7 days</option>
             <option value={28}>Last 28 days</option>
-            <option value={90}>Last 90 days</option>
+            {isAdvanced && <option value={90}>Last 90 days</option>}
+            {isPro && <option value={365}>Last 365 days</option>}
           </select>
         </div>
         <div className="flex gap-4 mt-3">
@@ -89,6 +92,17 @@ export default function Analytics() {
           <>
             {postsLoading ? <div className="flex justify-center py-8"><Loader2 size={24} className="animate-spin text-brand" /></div> : (
               <>
+                {/* Upgrade nudge for free users */}
+                {posts?.upgrade_message && (
+                  <div className="bg-brand/5 border border-brand/20 rounded-2xl p-4 mb-4 flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">You're on the Free plan</p>
+                      <p className="text-xs text-gray-500">{posts.upgrade_message}</p>
+                    </div>
+                    <a href="/premium" className="flex-shrink-0 text-xs font-semibold text-brand hover:underline">Upgrade →</a>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-3 mb-6">
                   <StatCard icon={Eye}            label="Impressions"      value={posts?.totals?.total_impressions ?? 0}  color="bg-brand" />
                   <StatCard icon={Heart}          label="Likes"            value={posts?.totals?.total_likes ?? 0}        color="bg-pink-500" />
@@ -104,8 +118,17 @@ export default function Analytics() {
                   <p className="text-xs text-gray-400">(likes + reposts + replies) / impressions</p>
                 </div>
 
-                {/* Daily chart */}
-                {(posts?.daily_breakdown ?? []).length > 0 && (
+                {/* Reach estimate — Pro+ only */}
+                {posts?.reach_estimate && (
+                  <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 mb-4">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Estimated reach</p>
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      <div><p className="text-lg font-bold text-gray-900 dark:text-white">{Number(posts.reach_estimate.followers).toLocaleString()}</p><p className="text-xs text-gray-500">Followers</p></div>
+                      <div><p className="text-lg font-bold text-gray-900 dark:text-white">{Number(posts.reach_estimate.estimated_reach).toLocaleString()}</p><p className="text-xs text-gray-500">Est. unique reach</p></div>
+                      <div><p className="text-lg font-bold text-gray-900 dark:text-white">{Number(posts.reach_estimate.repost_amplification).toLocaleString()}</p><p className="text-xs text-gray-500">Repost amplification</p></div>
+                    </div>
+                  </div>
+                )}
                   <div className="bg-gray-50 dark:bg-gray-900/50 rounded-2xl p-4 mb-4">
                     <p className="text-sm font-medium text-gray-900 dark:text-white mb-3">Daily impressions</p>
                     <div className="flex items-end gap-1 h-20">

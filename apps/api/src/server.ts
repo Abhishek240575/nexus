@@ -5,6 +5,7 @@ import app         from './app';
 import { connectDB } from './config/db';
 import { redis }   from './config/redis';
 import { registerSocketHandlers } from './services/socket.service';
+import { recordHashtagVelocitySnapshot } from './services/velocity-cron.service';
 
 const PORT = process.env.PORT || 4000;
 
@@ -31,6 +32,25 @@ const start = async (): Promise<void> => {
     console.log(`[Nexus API] Running on http://localhost:${PORT}`);
     console.log(`[Nexus API] Environment: ${process.env.NODE_ENV}`);
   });
+
+  // ─── Hashtag velocity cron (hourly snapshots for Pro+ extended history) ──────
+  // Run once immediately after startup, then every hour
+  setTimeout(async () => {
+    try {
+      await recordHashtagVelocitySnapshot();
+      console.log('[VelocityCron] Initial snapshot complete');
+    } catch (err: any) {
+      console.error('[VelocityCron] Initial snapshot failed:', err.message);
+    }
+  }, 30000); // 30s after boot to let DB settle
+
+  setInterval(async () => {
+    try {
+      await recordHashtagVelocitySnapshot();
+    } catch (err: any) {
+      console.error('[VelocityCron] Hourly snapshot failed:', err.message);
+    }
+  }, 60 * 60 * 1000); // every 60 minutes
 };
 
 start().catch((err) => {

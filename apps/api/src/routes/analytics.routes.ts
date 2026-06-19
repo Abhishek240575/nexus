@@ -8,9 +8,10 @@ import { validate }   from '../middlewares/validate.middleware';
 const router = Router();
 
 // ─── Analytics (creator) ──────────────────────────────────────────────────────
-router.get('/posts',    protect, analytics.getPostAnalytics);
-router.get('/profile',  protect, analytics.getProfileAnalytics);
-router.get('/hashtags', protect, analytics.getHashtagAnalytics);
+router.get('/posts',                          protect, analytics.getPostAnalytics);
+router.get('/profile',                        protect, analytics.getProfileAnalytics);
+router.get('/hashtags',                       protect, analytics.getHashtagAnalytics);
+router.get('/hashtag-velocity/:hashtag',      protect, analytics.getHashtagVelocityHistory);
 
 // ─── Admin ────────────────────────────────────────────────────────────────────
 router.get('/admin/stats',              protect, admin.getStats);

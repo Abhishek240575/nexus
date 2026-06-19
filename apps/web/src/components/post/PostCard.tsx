@@ -26,6 +26,7 @@ interface Post {
   author_avatar:  string | null;
   author_verified:boolean;
   author_tier:    string;
+  author_is_journalist?: boolean;
   is_liked?:      boolean;
   is_reposted?:   boolean;
   is_bookmarked?: boolean;
@@ -252,6 +253,9 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
               </Link>
               {post.author_verified && (
                 <VerifiedBadge tier={post.author_tier} size={14} />
+              )}
+              {post.author_is_journalist && (
+                <span title="Verified journalist" className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded font-medium">Press</span>
               )}
               <span className="text-gray-500 text-sm truncate">@{post.author_handle}</span>
               <span className="text-gray-400 text-sm flex-shrink-0">·</span>

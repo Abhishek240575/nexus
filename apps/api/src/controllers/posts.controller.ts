@@ -137,7 +137,9 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
   const { rows: enriched } = await db.query(
     `SELECT p.*, u.handle AS author_handle, u.display_name AS author_name,
             u.avatar_url AS author_avatar, u.verified AS author_verified,
-            u.premium_tier AS author_tier
+            u.premium_tier AS author_tier,
+            u.is_journalist AS author_is_journalist,
+            u.is_journalist AS author_is_journalist
      FROM posts p JOIN users u ON u.id = p.user_id WHERE p.id = $1`,
     [post.id]
   );
@@ -154,6 +156,7 @@ export const getPost = async (req: Request, res: Response): Promise<void> => {
             u.handle AS author_handle, u.display_name AS author_name,
             u.avatar_url AS author_avatar, u.verified AS author_verified,
             u.premium_tier AS author_tier,
+            u.is_journalist AS author_is_journalist,
             EXISTS(SELECT 1 FROM likes     WHERE user_id = $2::uuid AND post_id = p.id) AS is_liked,
             EXISTS(SELECT 1 FROM reposts   WHERE user_id = $2::uuid AND post_id = p.id) AS is_reposted,
             EXISTS(SELECT 1 FROM bookmarks WHERE user_id = $2::uuid AND post_id = p.id) AS is_bookmarked
@@ -191,6 +194,7 @@ export const getReplies = async (req: Request, res: Response): Promise<void> => 
             u.handle AS author_handle, u.display_name AS author_name,
             u.avatar_url AS author_avatar, u.verified AS author_verified,
             u.premium_tier AS author_tier,
+            u.is_journalist AS author_is_journalist,
             EXISTS(SELECT 1 FROM likes   WHERE user_id = $4::uuid AND post_id = p.id) AS is_liked,
             EXISTS(SELECT 1 FROM reposts WHERE user_id = $4::uuid AND post_id = p.id) AS is_reposted
      FROM posts p JOIN users u ON u.id = p.user_id
@@ -219,6 +223,7 @@ export const getHomeFeed = async (req: Request, res: Response): Promise<void> =>
             u.handle AS author_handle, u.display_name AS author_name,
             u.avatar_url AS author_avatar, u.verified AS author_verified,
             u.premium_tier AS author_tier,
+            u.is_journalist AS author_is_journalist,
             EXISTS(SELECT 1 FROM likes     WHERE user_id = $1::uuid AND post_id = p.id) AS is_liked,
             EXISTS(SELECT 1 FROM reposts   WHERE user_id = $1::uuid AND post_id = p.id) AS is_reposted,
             EXISTS(SELECT 1 FROM bookmarks WHERE user_id = $1::uuid AND post_id = p.id) AS is_bookmarked
@@ -248,6 +253,7 @@ export const getExploreFeed = async (req: Request, res: Response): Promise<void>
             u.handle AS author_handle, u.display_name AS author_name,
             u.avatar_url AS author_avatar, u.verified AS author_verified,
             u.premium_tier AS author_tier,
+            u.is_journalist AS author_is_journalist,
             EXISTS(SELECT 1 FROM likes   WHERE user_id = $1::uuid AND post_id = p.id) AS is_liked,
             EXISTS(SELECT 1 FROM reposts WHERE user_id = $1::uuid AND post_id = p.id) AS is_reposted
      FROM posts p JOIN users u ON u.id = p.user_id
@@ -349,6 +355,7 @@ export const getBookmarks = async (req: Request, res: Response): Promise<void> =
             u.handle AS author_handle, u.display_name AS author_name,
             u.avatar_url AS author_avatar, u.verified AS author_verified,
             u.premium_tier AS author_tier,
+            u.is_journalist AS author_is_journalist,
             TRUE AS is_bookmarked,
             EXISTS(SELECT 1 FROM likes   WHERE user_id = $1::uuid AND post_id = p.id) AS is_liked,
             EXISTS(SELECT 1 FROM reposts WHERE user_id = $1::uuid AND post_id = p.id) AS is_reposted
@@ -399,6 +406,7 @@ export const getPostsByHashtag = async (req: Request, res: Response): Promise<vo
             u.handle AS author_handle, u.display_name AS author_name,
             u.avatar_url AS author_avatar, u.verified AS author_verified,
             u.premium_tier AS author_tier,
+            u.is_journalist AS author_is_journalist,
             EXISTS(SELECT 1 FROM likes   WHERE user_id = $4::uuid AND post_id = p.id) AS is_liked,
             EXISTS(SELECT 1 FROM reposts WHERE user_id = $4::uuid AND post_id = p.id) AS is_reposted
      FROM posts p

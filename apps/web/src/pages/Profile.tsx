@@ -70,6 +70,9 @@ export default function Profile() {
           <div className="flex items-center gap-1.5">
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">{profile.display_name || profile.handle}</h1>
             {profile.verified && <VerifiedBadge tier={profile.premium_tier} size={16} />}
+            {profile.is_journalist && (
+              <span title="Verified journalist" className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded font-medium">Press</span>
+            )}
           </div>
           <p className="text-gray-500">@{profile.handle}</p>
         </div>
@@ -81,6 +84,11 @@ export default function Profile() {
         <div className="flex flex-wrap gap-x-4 gap-y-1 mb-3 mt-2 text-sm text-gray-500">
           {profile.location && <span className="flex items-center gap-1"><MapPin size={14} />{profile.location}</span>}
           {profile.website  && <a href={profile.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-brand hover:underline"><Link2 size={14} />{profile.website}</a>}
+          {profile.press_credential_url && (
+            <a href={profile.press_credential_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-amber-600 dark:text-amber-400 hover:underline text-sm">
+              <span className="text-xs font-medium">Press credential</span>
+            </a>
+          )}
           <span className="flex items-center gap-1"><Calendar size={14} />Joined {format(new Date(profile.created_at), 'MMMM yyyy')}</span>
         </div>
 
