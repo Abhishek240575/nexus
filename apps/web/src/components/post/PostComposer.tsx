@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import { Image, Smile, BarChart2, Calendar, X, Plus, Trash2 } from 'lucide-react';
 import { useAuthStore }    from '@/stores/auth.store';
 import { postsService }    from '@/services/posts.service';
@@ -14,6 +14,31 @@ interface PostComposerProps {
 }
 
 interface PollOption { text: string; }
+
+const POST_LANGUAGES = [
+  { code: 'auto', label: 'Auto-detect' },
+  { code: 'en',   label: 'English'     },
+  { code: 'hi',   label: 'Hindi'       },
+  { code: 'ta',   label: 'Tamil'       },
+  { code: 'te',   label: 'Telugu'      },
+  { code: 'bn',   label: 'Bengali'     },
+  { code: 'mr',   label: 'Marathi'     },
+  { code: 'gu',   label: 'Gujarati'    },
+  { code: 'kn',   label: 'Kannada'     },
+  { code: 'ml',   label: 'Malayalam'   },
+  { code: 'pa',   label: 'Punjabi'     },
+  { code: 'ur',   label: 'Urdu'        },
+  { code: 'or',   label: 'Odia'        },
+  { code: 'ar',   label: 'Arabic'      },
+  { code: 'zh',   label: 'Mandarin'    },
+  { code: 'ru',   label: 'Russian'     },
+  { code: 'fa',   label: 'Farsi'       },
+  { code: 'es',   label: 'Spanish'     },
+  { code: 'fr',   label: 'French'      },
+  { code: 'de',   label: 'German'      },
+  { code: 'pt',   label: 'Portuguese'  },
+  { code: 'nl',   label: 'Dutch'       },
+];
 
 export default function PostComposer({
   replyToId, onPosted, placeholder = "What's happening?", autoFocus
@@ -31,20 +56,18 @@ export default function PostComposer({
     if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
   };
 
-  // Media
-  const [mediaFiles,   setMediaFiles]   = useState<File[]>([]);
+  const [mediaFiles,    setMediaFiles]    = useState<File[]>([]);
   const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
-  const [uploading,    setUploading]    = useState(false);
+  const [uploading,     setUploading]     = useState(false);
+  const [showEmoji,     setShowEmoji]     = useState(false);
+  const [showPoll,      setShowPoll]      = useState(false);
+  const [pollOptions,   setPollOptions]   = useState<PollOption[]>([{ text: '' }, { text: '' }]);
+  const [pollHours,     setPollHours]     = useState(24);
+  const [postLang,      setPostLang]      = useState('auto');
+  const [showLangMenu,  setShowLangMenu]  = useState(false);
 
-  // Emoji
-  const [showEmoji, setShowEmoji] = useState(false);
+  const selectedLangLabel = POST_LANGUAGES.find(l => l.code === postLang)?.label || 'Auto';
 
-  // Poll
-  const [showPoll,   setShowPoll]   = useState(false);
-  const [pollOptions, setPollOptions] = useState<PollOption[]>([{ text: '' }, { text: '' }]);
-  const [pollHours,  setPollHours]  = useState(24);
-
-  // Submit handler
   const handleSubmit = async () => {
     if (submitting) return;
     if (!content.trim() && mediaFiles.length === 0 && !showPoll) return;
@@ -69,14 +92,11 @@ export default function PostComposer({
         setUploading(false);
       }
 
-      const poll = showPoll
-        ? { options: pollOptions.map(o => o.text).filter(Boolean), duration_hours: pollHours }
-        : undefined;
-
       await postsService.createPost({
-        content:      content.trim() || null,
-        reply_to_id:  replyToId,
+        content:     content.trim() || null,
+        reply_to_id: replyToId,
         media_urls,
+        language:    postLang === 'auto' ? undefined : postLang,
       });
 
       setContent('');
@@ -84,6 +104,7 @@ export default function PostComposer({
       setMediaPreviews([]);
       setShowPoll(false);
       setShowEmoji(false);
+      setShowLangMenu(false);
       setPollOptions([{ text: '' }, { text: '' }]);
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
 
@@ -102,7 +123,7 @@ export default function PostComposer({
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []).slice(0, 4 - mediaFiles.length);
+    const files      = Array.from(e.target.files || []).slice(0, 4 - mediaFiles.length);
     const newFiles    = [...mediaFiles,    ...files].slice(0, 4);
     const newPreviews = [...mediaPreviews, ...files.map(f => URL.createObjectURL(f))].slice(0, 4);
     setMediaFiles(newFiles);
@@ -136,6 +157,7 @@ export default function PostComposer({
           <textarea
             ref={textareaRef}
             value={content}
+            dir={['ar', 'ur', 'fa'].includes(postLang) ? 'rtl' : 'ltr'}
             onChange={e => { setContent(e.target.value); autoResize(); }}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
@@ -144,10 +166,8 @@ export default function PostComposer({
             className="w-full resize-none outline-none bg-transparent text-gray-900 dark:text-white placeholder-gray-400 text-base leading-relaxed min-h-[56px]"
           />
 
-          {/* Error */}
           {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
 
-          {/* Media previews */}
           {mediaPreviews.length > 0 && (
             <div className="grid grid-cols-2 gap-2 mb-3">
               {mediaPreviews.map((url, i) => (
@@ -162,7 +182,6 @@ export default function PostComposer({
             </div>
           )}
 
-          {/* Poll builder */}
           {showPoll && (
             <div className="border border-gray-200 dark:border-gray-700 rounded-2xl p-3 mb-3 space-y-2">
               <p className="text-sm font-semibold text-gray-900 dark:text-white">Poll</p>
@@ -197,7 +216,6 @@ export default function PostComposer({
             </div>
           )}
 
-          {/* Emoji picker */}
           {showEmoji && (
             <div className="mb-3">
               <EmojiPicker
@@ -207,10 +225,7 @@ export default function PostComposer({
                   const start = ta.selectionStart;
                   const end   = ta.selectionEnd;
                   setContent(prev => prev.slice(0, start) + e.emoji + prev.slice(end));
-                  setTimeout(() => {
-                    ta.selectionStart = ta.selectionEnd = start + e.emoji.length;
-                    ta.focus();
-                  }, 0);
+                  setTimeout(() => { ta.selectionStart = ta.selectionEnd = start + e.emoji.length; ta.focus(); }, 0);
                 }}
                 width="100%"
                 height={300}
@@ -218,13 +233,25 @@ export default function PostComposer({
             </div>
           )}
 
+          {/* Language dropdown */}
+          {showLangMenu && (
+            <div className="mb-2 border border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-900 shadow-lg max-h-52 overflow-y-auto">
+              <p className="text-xs font-semibold text-gray-400 px-3 pt-2 pb-1 sticky top-0 bg-white dark:bg-gray-900">Posting language</p>
+              {POST_LANGUAGES.map(l => (
+                <button key={l.code}
+                  onClick={() => { setPostLang(l.code); setShowLangMenu(false); }}
+                  className={`w-full text-left px-3 py-1.5 text-sm transition-colors ${postLang === l.code ? 'text-brand bg-brand/5 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+                  {l.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Toolbar */}
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-800">
             <div className="flex items-center gap-1 -ml-1 flex-wrap">
 
-              {/* Image upload */}
-              <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden"
-                onChange={handleFileChange} />
+              <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileChange} />
               <button onClick={() => fileInputRef.current?.click()}
                 disabled={mediaFiles.length >= 4 || showPoll}
                 title="Add image"
@@ -232,16 +259,12 @@ export default function PostComposer({
                 <Image size={18} />
               </button>
 
-              {/* Emoji picker */}
-              <div className="relative">
-                <button onClick={() => setShowEmoji(s => !s)}
-                  title="Add emoji"
-                  className={`p-2 rounded-full transition-colors ${showEmoji ? 'bg-blue-50 dark:bg-blue-900/20 text-brand' : 'text-brand hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}>
-                  <Smile size={18} />
-                </button>
-              </div>
+              <button onClick={() => setShowEmoji(s => !s)}
+                title="Add emoji"
+                className={`p-2 rounded-full transition-colors ${showEmoji ? 'bg-blue-50 dark:bg-blue-900/20 text-brand' : 'text-brand hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}>
+                <Smile size={18} />
+              </button>
 
-              {/* Poll */}
               <button onClick={() => { setShowPoll(s => !s); setMediaFiles([]); setMediaPreviews([]); }}
                 disabled={mediaFiles.length > 0}
                 title="Create poll"
@@ -249,11 +272,17 @@ export default function PostComposer({
                 <BarChart2 size={18} />
               </button>
 
-              {/* Schedule */}
-              <button
-                title="Schedule post (coming soon)"
-                className="p-2 rounded-full transition-colors text-gray-300 dark:text-gray-600 cursor-not-allowed">
+              <button title="Schedule (coming soon)"
+                className="p-2 rounded-full text-gray-300 dark:text-gray-600 cursor-not-allowed">
                 <Calendar size={18} />
+              </button>
+
+              {/* Language selector */}
+              <button
+                onClick={() => setShowLangMenu(s => !s)}
+                title="Posting language"
+                className={`px-2 py-1 rounded-full text-xs font-medium border transition-colors ${showLangMenu ? 'border-brand text-brand bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-brand hover:text-brand'}`}>
+                {postLang === 'auto' ? 'Auto' : selectedLangLabel}
               </button>
 
             </div>
@@ -262,9 +291,7 @@ export default function PostComposer({
               {content.length > 0 && (
                 <div className="flex items-center gap-2">
                   <svg width="20" height="20" viewBox="0 0 20 20">
-                    <circle cx="10" cy="10" r="8" fill="none"
-                      stroke="currentColor" strokeWidth="2"
-                      className="text-gray-200 dark:text-gray-700" />
+                    <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-200 dark:text-gray-700" />
                     <circle cx="10" cy="10" r="8" fill="none"
                       stroke={remain < 20 ? (remain < 0 ? '#ef4444' : '#f59e0b') : '#1d9bf0'}
                       strokeWidth="2"
@@ -274,15 +301,11 @@ export default function PostComposer({
                       transform="rotate(-90 10 10)" />
                   </svg>
                   {remain <= 20 && (
-                    <span className={`text-sm ${remain < 0 ? 'text-red-500' : 'text-gray-500'}`}>
-                      {remain}
-                    </span>
+                    <span className={`text-sm ${remain < 0 ? 'text-red-500' : 'text-gray-500'}`}>{remain}</span>
                   )}
                 </div>
               )}
-              <button
-                onClick={handleSubmit}
-                disabled={!canPost}
+              <button onClick={handleSubmit} disabled={!canPost}
                 className="bg-brand hover:bg-brand-dark disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-4 py-1.5 rounded-full text-sm transition-colors">
                 {submitting ? submitting : replyToId ? 'Reply' : 'Post'}
               </button>
