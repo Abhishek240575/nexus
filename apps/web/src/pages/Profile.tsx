@@ -1,7 +1,7 @@
 import { useState }        from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Calendar, Link2, MapPin, Loader2 } from 'lucide-react';
+import { Calendar, Link2, MapPin, Loader2, X } from 'lucide-react';
 import { usersService }    from '@/services/posts.service';
 import { useAuthStore }    from '@/stores/auth.store';
 import Feed                from '@/components/feed/Feed';
@@ -9,12 +9,20 @@ import VerifiedBadge          from '@/components/common/VerifiedBadge';
 import UserBadges             from '@/components/common/UserBadges';
 import CreatorSubscribeButton from '@/components/common/CreatorSubscribeButton';
 import { format }          from 'date-fns';
+import { api }             from '@/services/api.client';
 
 export default function Profile() {
   const { handle }     = useParams<{ handle: string }>();
   const { user }       = useAuthStore();
   const queryClient    = useQueryClient();
   const [tab, setTab]  = useState<'posts' | 'replies' | 'media' | 'likes'>('posts');
+  const [showEdit,     setShowEdit]     = useState(false);
+  const [editName,     setEditName]     = useState('');
+  const [editBio,      setEditBio]      = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [editWebsite,  setEditWebsite]  = useState('');
+  const [editSaving,   setEditSaving]   = useState(false);
+  const [editError,    setEditError]    = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['profile', handle],
@@ -27,6 +35,34 @@ export default function Profile() {
     mutationFn: () => usersService.followUser(profile.id),
     onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['profile', handle] }),
   });
+
+  const openEdit = () => {
+    setEditName(profile.display_name || '');
+    setEditBio(profile.bio || '');
+    setEditLocation(profile.location || '');
+    setEditWebsite(profile.website || '');
+    setEditError('');
+    setShowEdit(true);
+  };
+
+  const saveEdit = async () => {
+    setEditSaving(true);
+    setEditError('');
+    try {
+      await api.patch('/api/users/me/profile', {
+        display_name: editName,
+        bio:          editBio,
+        location:     editLocation,
+        website:      editWebsite,
+      });
+      queryClient.invalidateQueries({ queryKey: ['profile', handle] });
+      setShowEdit(false);
+    } catch (err: any) {
+      setEditError(err.response?.data?.error || 'Could not save. Please try again.');
+    } finally {
+      setEditSaving(false);
+    }
+  };
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 size={24} className="animate-spin text-brand" /></div>;
   if (!profile)  return <div className="text-center py-12 text-gray-400">User not found</div>;
@@ -49,7 +85,7 @@ export default function Profile() {
             className="w-20 h-20 rounded-full border-4 border-white dark:border-black object-cover" />
           <div>
             {isMe ? (
-              <button className="border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white font-semibold px-4 py-1.5 rounded-full text-sm hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+              <button onClick={openEdit} className="border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white font-semibold px-4 py-1.5 rounded-full text-sm hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
                 Edit profile
               </button>
             ) : (
@@ -121,6 +157,59 @@ export default function Profile() {
       </div>
 
       <Feed type="profile" handle={handle} tab={tab} />
+
+      {/* Edit Profile Modal */}
+      {showEdit && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 px-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-black rounded-2xl w-full max-w-lg border border-gray-200 dark:border-gray-800 shadow-xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+              <button onClick={() => setShowEdit(false)} className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-900">
+                <X size={18} className="text-gray-700 dark:text-gray-300" />
+              </button>
+              <h2 className="text-base font-bold text-gray-900 dark:text-white">Edit profile</h2>
+              <button onClick={saveEdit} disabled={editSaving}
+                className="bg-gray-900 dark:bg-white text-white dark:text-black font-semibold px-4 py-1.5 rounded-full text-sm hover:opacity-90 disabled:opacity-50 transition-opacity">
+                {editSaving ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+
+            {/* Fields */}
+            <div className="px-4 py-4 space-y-4">
+              {editError && <p className="text-red-500 text-sm">{editError}</p>}
+
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Name</label>
+                <input value={editName} onChange={e => setEditName(e.target.value)} maxLength={50}
+                  placeholder="Your name"
+                  className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-black text-gray-900 dark:text-white outline-none focus:border-brand transition-colors" />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Bio</label>
+                <textarea value={editBio} onChange={e => setEditBio(e.target.value)} maxLength={160} rows={3}
+                  placeholder="Tell the world about yourself"
+                  className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-black text-gray-900 dark:text-white outline-none focus:border-brand transition-colors resize-none" />
+                <p className="text-xs text-gray-400 text-right mt-0.5">{editBio.length}/160</p>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Location</label>
+                <input value={editLocation} onChange={e => setEditLocation(e.target.value)} maxLength={30}
+                  placeholder="Where are you based?"
+                  className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-black text-gray-900 dark:text-white outline-none focus:border-brand transition-colors" />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-gray-500 mb-1 block">Website</label>
+                <input value={editWebsite} onChange={e => setEditWebsite(e.target.value)} maxLength={100}
+                  placeholder="https://yourwebsite.com"
+                  className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm bg-white dark:bg-black text-gray-900 dark:text-white outline-none focus:border-brand transition-colors" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
