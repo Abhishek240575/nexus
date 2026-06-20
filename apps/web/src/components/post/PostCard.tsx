@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link }            from 'react-router-dom';
 import { Heart, Repeat2, MessageCircle, Bookmark, Share, MoreHorizontal, Globe, X,
-         UserPlus, VolumeX, Ban, Flag, Code, ThumbsDown, BarChart2, Eye } from 'lucide-react';
+         UserPlus, VolumeX, Ban, Flag, Code, ThumbsDown, BarChart2, Eye, Crown } from 'lucide-react';
 import { postsService }    from '@/services/posts.service';
 import VerifiedBadge       from '@/components/common/VerifiedBadge';
 import TipButton           from '@/components/post/TipButton';
@@ -310,8 +310,23 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
           </div>
 
           {/* Post text */}
-          {post.content && (
+          {post.is_exclusive && !post.content ? (
+            <div className="border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10 rounded-xl p-4 mb-2 text-center">
+              <Crown size={20} className="text-amber-500 mx-auto mb-2" />
+              <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">Exclusive content</p>
+              <p className="text-xs text-gray-500 mb-3">Subscribe to {post.author_name || post.author_handle} to read this post</p>
+              <a href={`/${post.author_handle}`}
+                className="inline-flex items-center gap-1.5 bg-amber-500 text-white px-4 py-1.5 rounded-full text-xs font-semibold hover:bg-amber-600 transition-colors">
+                <Crown size={12} /> View subscription
+              </a>
+            </div>
+          ) : post.content && (
             <p className="text-sm text-gray-900 dark:text-white leading-relaxed mb-2">
+              {post.is_exclusive && (
+                <span className="inline-flex items-center gap-1 text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded mr-1.5 mb-1">
+                  <Crown size={10} /> Exclusive
+                </span>
+              )}
               {renderContent(post.content)}
             </p>
           )}

@@ -48,6 +48,10 @@ export default function PostComposer({
   const [postLang,      setPostLang]      = useState('auto');
   const [showLangMenu,  setShowLangMenu]  = useState(false);
 
+  // Exclusive post toggle (Pro/Enterprise only)
+  const [isExclusive, setIsExclusive] = useState(false);
+  const isPro = ['pro', 'enterprise'].includes(user?.premium_tier || '');
+
   const POST_LANGUAGES = [
     { code: 'auto', label: 'Auto-detect' },
     { code: 'en',   label: 'English' },
@@ -150,6 +154,7 @@ export default function PostComposer({
         media_urls,
         scheduled_at,
         language:     postLang === 'auto' ? undefined : postLang,
+        is_exclusive: isExclusive || undefined,
       });
 
       // If poll, create it separately
@@ -201,6 +206,8 @@ export default function PostComposer({
           <textarea
             ref={textareaRef}
             value={content}
+            lang={postLang === 'auto' ? undefined : postLang}
+            dir={['ar', 'ur', 'fa'].includes(postLang) ? 'rtl' : 'ltr'}
             onChange={e => { setContent(e.target.value); autoResize(); }}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
@@ -343,8 +350,19 @@ export default function PostComposer({
                 <Calendar size={18} />
               </button>
 
-              {/* Language selector */}
-              <div className="relative">
+              {/* Exclusive toggle — Pro/Enterprise only */}
+              {isPro && !replyToId && (
+                <button
+                  onClick={() => setIsExclusive(e => !e)}
+                  title="Make this post exclusive to your subscribers"
+                  className={`px-2 py-1 rounded-full text-xs font-medium transition-colors border flex items-center gap-1 ${
+                    isExclusive
+                      ? 'border-amber-400 text-amber-600 bg-amber-50 dark:bg-amber-900/20'
+                      : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-amber-400 hover:text-amber-500'
+                  }`}>
+                  👑 {isExclusive ? 'Exclusive' : 'Public'}
+                </button>
+              )}
                 <button onClick={() => setShowLangMenu(s => !s)}
                   title="Post language"
                   className={`px-2 py-1 rounded-full text-xs font-medium transition-colors border ${showLangMenu ? 'border-brand text-brand bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-brand hover:text-brand'}`}>

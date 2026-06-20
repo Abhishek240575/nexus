@@ -37,7 +37,7 @@ const createNotification = async (data: {
 
 export const createPost = async (req: Request, res: Response): Promise<void> => {
   const { id: userId } = (req as AuthenticatedRequest).user;
-  const { content, media_urls = [], reply_to_id, quote_of_id, community_id, scheduled_at, language } = req.body;
+  const { content, media_urls = [], reply_to_id, quote_of_id, community_id, scheduled_at, language, is_exclusive } = req.body;
 
   if (!content && (!media_urls || media_urls.length === 0)) {
     R.badRequest(res, 'Post must have content or media'); return;
@@ -69,10 +69,10 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
   }
 
   const { rows } = await db.query(
-    `INSERT INTO posts (user_id, content, media_urls, reply_to_id, quote_of_id, community_id, scheduled_at, is_published, priority_boost, language)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    `INSERT INTO posts (user_id, content, media_urls, reply_to_id, quote_of_id, community_id, scheduled_at, is_published, priority_boost, language, is_exclusive)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
      RETURNING *`,
-    [userId, content || null, media_urls, reply_to_id || null, quote_of_id || null, community_id || null, scheduled_at || null, !scheduled_at, priorityBoost, language || null]
+    [userId, content || null, media_urls, reply_to_id || null, quote_of_id || null, community_id || null, scheduled_at || null, !scheduled_at, priorityBoost, language || null, is_exclusive || false]
   );
 
   const post = rows[0];
@@ -139,7 +139,7 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
             u.avatar_url AS author_avatar, u.verified AS author_verified,
             u.premium_tier AS author_tier,
             u.is_journalist AS author_is_journalist,
-            u.is_journalist AS author_is_journalist
+            p.is_exclusive
      FROM posts p JOIN users u ON u.id = p.user_id WHERE p.id = $1`,
     [post.id]
   );
@@ -157,6 +157,7 @@ export const getPost = async (req: Request, res: Response): Promise<void> => {
             u.avatar_url AS author_avatar, u.verified AS author_verified,
             u.premium_tier AS author_tier,
             u.is_journalist AS author_is_journalist,
+            p.is_exclusive,
             EXISTS(SELECT 1 FROM likes     WHERE user_id = $2::uuid AND post_id = p.id) AS is_liked,
             EXISTS(SELECT 1 FROM reposts   WHERE user_id = $2::uuid AND post_id = p.id) AS is_reposted,
             EXISTS(SELECT 1 FROM bookmarks WHERE user_id = $2::uuid AND post_id = p.id) AS is_bookmarked
@@ -195,6 +196,7 @@ export const getReplies = async (req: Request, res: Response): Promise<void> => 
             u.avatar_url AS author_avatar, u.verified AS author_verified,
             u.premium_tier AS author_tier,
             u.is_journalist AS author_is_journalist,
+            p.is_exclusive,
             EXISTS(SELECT 1 FROM likes   WHERE user_id = $4::uuid AND post_id = p.id) AS is_liked,
             EXISTS(SELECT 1 FROM reposts WHERE user_id = $4::uuid AND post_id = p.id) AS is_reposted
      FROM posts p JOIN users u ON u.id = p.user_id
@@ -224,6 +226,7 @@ export const getHomeFeed = async (req: Request, res: Response): Promise<void> =>
             u.avatar_url AS author_avatar, u.verified AS author_verified,
             u.premium_tier AS author_tier,
             u.is_journalist AS author_is_journalist,
+            p.is_exclusive,
             EXISTS(SELECT 1 FROM likes     WHERE user_id = $1::uuid AND post_id = p.id) AS is_liked,
             EXISTS(SELECT 1 FROM reposts   WHERE user_id = $1::uuid AND post_id = p.id) AS is_reposted,
             EXISTS(SELECT 1 FROM bookmarks WHERE user_id = $1::uuid AND post_id = p.id) AS is_bookmarked
@@ -254,6 +257,7 @@ export const getExploreFeed = async (req: Request, res: Response): Promise<void>
             u.avatar_url AS author_avatar, u.verified AS author_verified,
             u.premium_tier AS author_tier,
             u.is_journalist AS author_is_journalist,
+            p.is_exclusive,
             EXISTS(SELECT 1 FROM likes   WHERE user_id = $1::uuid AND post_id = p.id) AS is_liked,
             EXISTS(SELECT 1 FROM reposts WHERE user_id = $1::uuid AND post_id = p.id) AS is_reposted
      FROM posts p JOIN users u ON u.id = p.user_id
@@ -356,6 +360,7 @@ export const getBookmarks = async (req: Request, res: Response): Promise<void> =
             u.avatar_url AS author_avatar, u.verified AS author_verified,
             u.premium_tier AS author_tier,
             u.is_journalist AS author_is_journalist,
+            p.is_exclusive,
             TRUE AS is_bookmarked,
             EXISTS(SELECT 1 FROM likes   WHERE user_id = $1::uuid AND post_id = p.id) AS is_liked,
             EXISTS(SELECT 1 FROM reposts WHERE user_id = $1::uuid AND post_id = p.id) AS is_reposted
@@ -407,6 +412,7 @@ export const getPostsByHashtag = async (req: Request, res: Response): Promise<vo
             u.avatar_url AS author_avatar, u.verified AS author_verified,
             u.premium_tier AS author_tier,
             u.is_journalist AS author_is_journalist,
+            p.is_exclusive,
             EXISTS(SELECT 1 FROM likes   WHERE user_id = $4::uuid AND post_id = p.id) AS is_liked,
             EXISTS(SELECT 1 FROM reposts WHERE user_id = $4::uuid AND post_id = p.id) AS is_reposted
      FROM posts p

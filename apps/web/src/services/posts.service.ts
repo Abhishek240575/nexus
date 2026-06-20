@@ -11,7 +11,7 @@ export const postsService = {
   createPost: (data: {
     content?: string; media_urls?: string[];
     reply_to_id?: string; quote_of_id?: string;
-    community_id?: string; scheduled_at?: string; language?: string;
+    community_id?: string; scheduled_at?: string; language?: string; is_exclusive?: boolean;
   }) => api.post('/api/posts', data),
 
   getPost:    (id: string) => api.get(`/api/posts/${id}`),

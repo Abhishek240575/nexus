@@ -5,8 +5,9 @@ import { Calendar, Link2, MapPin, Loader2 } from 'lucide-react';
 import { usersService }    from '@/services/posts.service';
 import { useAuthStore }    from '@/stores/auth.store';
 import Feed                from '@/components/feed/Feed';
-import VerifiedBadge       from '@/components/common/VerifiedBadge';
-import UserBadges          from '@/components/common/UserBadges';
+import VerifiedBadge          from '@/components/common/VerifiedBadge';
+import UserBadges             from '@/components/common/UserBadges';
+import CreatorSubscribeButton from '@/components/common/CreatorSubscribeButton';
 import { format }          from 'date-fns';
 
 export default function Profile() {
@@ -80,6 +81,7 @@ export default function Profile() {
         {profile.bio && <p className="text-gray-900 dark:text-white text-sm mb-3 leading-relaxed">{profile.bio}</p>}
 
         <UserBadges handle={profile.handle} />
+        <CreatorSubscribeButton handle={profile.handle} />
 
         <div className="flex flex-wrap gap-x-4 gap-y-1 mb-3 mt-2 text-sm text-gray-500">
           {profile.location && <span className="flex items-center gap-1"><MapPin size={14} />{profile.location}</span>}
