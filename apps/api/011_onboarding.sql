@@ -1,0 +1,4 @@
+-- Migration 011: Onboarding tracking
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_onboarded   BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_langs TEXT[]  NOT NULL DEFAULT '{en}';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS interests       TEXT[]  NOT NULL DEFAULT '{}';

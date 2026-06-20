@@ -77,7 +77,7 @@ export default function ResetPassword() {
             </div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Password updated!</h2>
             <p className="text-gray-500 text-sm mb-2">Your password has been reset successfully.</p>
-            <p className="text-xs text-gray-400">Redirecting to login in 3 seconds...</p>
+            <p className="text-xs text-gray-400">Redirecting to login in 3 seconds…</p>
           </div>
         ) : (
           <>
@@ -159,7 +159,7 @@ export default function ResetPassword() {
               <button type="submit"
                 disabled={!password || !confirm || password !== confirm || loading}
                 className="w-full bg-brand hover:bg-brand-dark disabled:opacity-50 text-white font-semibold py-3 rounded-full transition-colors flex items-center justify-center gap-2">
-                {loading ? <><Loader2 size={16} className="animate-spin" /> Updating...</> : 'Reset password'}
+                {loading ? <><Loader2 size={16} className="animate-spin" /> Updating…</> : 'Reset password'}
               </button>
             </form>
 

@@ -191,7 +191,7 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
         setTimeout(() => setMenuMsg(''), 3000);
         break;
       case 'embed': {
-        const embedCode = `<blockquote class="nexus-post"><a href="${window.location.origin}/${post.author_handle}/post/${post.id}">@${post.author_handle}: ${post.content?.slice(0, 100)}</a></blockquote>`;
+        const embedCode = `<blockquote class="deemona-post"><a href="${window.location.origin}/${post.author_handle}/post/${post.id}">@${post.author_handle}: ${post.content?.slice(0, 100)}</a></blockquote>`;
         await navigator.clipboard.writeText(embedCode);
         setMenuMsg('Embed code copied!');
         setTimeout(() => setMenuMsg(''), 3000);

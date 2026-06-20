@@ -29,13 +29,13 @@ export const useThemeStore = create<ThemeStore>()(
         return theme === 'dark' || (theme === 'system' && getSystemDark());
       },
     }),
-    { name: 'Deemona-theme' }
+    { name: 'deemona-theme' }
   )
 );
 
 // Initialize on load
 export const initTheme = () => {
-  const stored = localStorage.getItem('Deemona-theme');
+  const stored = localStorage.getItem('deemona-theme');
   const theme: Theme = stored ? JSON.parse(stored)?.state?.theme ?? 'system' : 'system';
   applyTheme(theme);
 

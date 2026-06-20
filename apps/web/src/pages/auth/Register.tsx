@@ -23,11 +23,11 @@ export default function Register() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      const res = await authService.register(data as { handle: string; email: string; password: string; display_name?: string });
+      const res = await authService.register(data);
       const { user, access_token, refresh_token } = res.data.data;
       setAuth(user, access_token, refresh_token);
       connectSocket();
-      navigate('/');
+      navigate('/onboarding');
     } catch (err: any) {
       setError('root', { message: err.response?.data?.error || 'Registration failed' });
     }
@@ -69,7 +69,7 @@ export default function Register() {
           disabled={isSubmitting}
           className="w-full bg-brand hover:bg-brand-dark disabled:opacity-60 text-white font-semibold py-3 rounded-full transition-colors"
         >
-          {isSubmitting ? 'Creating account...' : 'Create account'}
+          {isSubmitting ? 'Creating account…' : 'Create account'}
         </button>
       </form>
 

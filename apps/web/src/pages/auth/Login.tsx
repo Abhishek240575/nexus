@@ -21,7 +21,7 @@ export default function Login() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      const res = await authService.login(data as { identifier: string; password: string });
+      const res = await authService.login(data);
       const { user, access_token, refresh_token } = res.data.data;
       setAuth(user, access_token, refresh_token);
       connectSocket();
@@ -87,7 +87,7 @@ export default function Login() {
           disabled={isSubmitting}
           className="w-full bg-brand hover:bg-brand-dark disabled:opacity-60 text-white font-semibold py-3 rounded-full transition-colors"
         >
-          {isSubmitting ? 'Signing in...' : 'Sign in'}
+          {isSubmitting ? 'Signing in…' : 'Sign in'}
         </button>
       </form>
 

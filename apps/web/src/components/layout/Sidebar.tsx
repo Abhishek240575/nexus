@@ -1,4 +1,4 @@
-﻿import { NavLink, useNavigate }    from 'react-router-dom';
+import { NavLink, useNavigate }    from 'react-router-dom';
 import { Home, Search, Bell, Mail, Bookmark, User,
          BarChart2, Users, Radio, Settings, LogOut, Swords, TrendingUp, List, Sun, Moon, Crown, Gift, Shield } from 'lucide-react';
 import { useThemeStore } from '@/stores/theme.store';
@@ -55,7 +55,7 @@ export default function Sidebar() {
 
   return (
     <div className="flex flex-col h-full px-3 py-4">
-      <div className="px-3 py-2 mb-2 text-2xl font-bold text-brand">Nexus</div>
+      <div className="px-3 py-2 mb-2 text-2xl font-bold text-brand">Deemona</div>
 
       <nav className="flex-1 space-y-1">
         {navItems.map(({ to, icon: Icon, label, badge }) => (

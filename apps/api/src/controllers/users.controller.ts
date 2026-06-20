@@ -235,3 +235,42 @@ export const search = async (req: Request, res: Response): Promise<void> => {
 
   R.ok(res, results);
 };
+
+// ─── Complete onboarding ──────────────────────────────────────────────────────
+export const completeOnboarding = async (req: Request, res: Response): Promise<void> => {
+  const { id: userId } = (req as any).user;
+  const { languages = ['en'], interests = [] } = req.body;
+
+  await db.query(
+    `UPDATE users SET
+       is_onboarded    = TRUE,
+       preferred_langs = $1,
+       interests       = $2
+     WHERE id = $3`,
+    [languages, interests, userId]
+  );
+
+  R.ok(res, { onboarded: true });
+};
+
+// ─── Get follow suggestions for onboarding ───────────────────────────────────
+export const getFollowSuggestions = async (req: Request, res: Response): Promise<void> => {
+  const { id: userId } = (req as any).user;
+  const limit = Number(req.query.limit) || 12;
+
+  const { rows } = await db.query(
+    `SELECT u.id, u.handle, u.display_name, u.avatar_url, u.verified, u.premium_tier,
+            u.followers_count
+     FROM users u
+     WHERE u.id != $1
+       AND u.suspended = FALSE
+       AND u.id NOT IN (
+         SELECT following_id FROM follows WHERE follower_id = $1
+       )
+     ORDER BY u.followers_count DESC, u.verified DESC
+     LIMIT $2`,
+    [userId, limit]
+  );
+
+  R.ok(res, rows);
+};

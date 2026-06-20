@@ -1,13 +1,15 @@
-﻿import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider }        from '@tanstack/react-query';
-import { ReactQueryDevtools as QueryDevtools } from '@tanstack/react-query-devtools';
+import { QueryDevtools } from '@tanstack/react-query-devtools';
 import { useAuthStore }  from '@/stores/auth.store';
+import { useEffect }     from 'react';
+import { initPushNotifications } from '@/services/notifications.service';
 
 // Layouts
 import AppLayout   from '@/components/layout/AppLayout';
 import AuthLayout  from '@/components/layout/AuthLayout';
 
-// Pages â€” lazy loaded
+// Pages — lazy loaded
 import { lazy, Suspense } from 'react';
 const Home          = lazy(() => import('@/pages/Home'));
 const Explore       = lazy(() => import('@/pages/Explore'));
@@ -22,11 +24,12 @@ const Trending      = lazy(() => import('@/pages/Trending'));
 const CommunityMod       = lazy(() => import('@/pages/CommunityMod'));
 const Lists              = lazy(() => import('@/pages/Lists'));
 const FollowList         = lazy(() => import('@/pages/FollowList'));
-const Analytics    = lazy(() => import('@/pages/Analytics'));
 const Pricing            = lazy(() => import('@/pages/Pricing'));
 const Earnings           = lazy(() => import('@/pages/Earnings'));
+const Compliance         = lazy(() => import('@/pages/Compliance'));
 const Legal              = lazy(() => import('@/pages/Legal'));
 const TermsOfService     = lazy(() => import('@/pages/Legal').then(m => ({ default: m.TermsOfService })));
+const Onboarding         = lazy(() => import('@/pages/Onboarding'));
 const PrivacyPolicy      = lazy(() => import('@/pages/Legal').then(m => ({ default: m.PrivacyPolicy })));
 const GrievanceOfficer   = lazy(() => import('@/pages/Legal').then(m => ({ default: m.GrievanceOfficer })));
 const CommunityGuidelines = lazy(() => import('@/pages/Legal').then(m => ({ default: m.CommunityGuidelines })));
@@ -60,6 +63,14 @@ const GuestRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 export default function App() {
+  const { isAuthenticated } = useAuthStore();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      initPushNotifications().catch(() => {});
+    }
+  }, [isAuthenticated]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
@@ -86,6 +97,7 @@ export default function App() {
               <Route path="/lists/:id"             element={<Lists />} />
               <Route path="/premium"               element={<Pricing />} />
               <Route path="/earnings"              element={<Earnings />} />
+              <Route path="/compliance"            element={<Compliance />} />
               <Route path="/communities"           element={<Communities />} />
               <Route path="/communities/:slug"     element={<Communities />} />
               <Route path="/communities/:slug/mod" element={<CommunityMod />} />
@@ -99,6 +111,7 @@ export default function App() {
               <Route path="/settings"              element={<Settings />} />
               <Route path="/legal"                 element={<Legal />} />
               <Route path="/terms"                 element={<TermsOfService />} />
+              <Route path="/onboarding"            element={<Onboarding />} />
               <Route path="/privacy"               element={<PrivacyPolicy />} />
               <Route path="/grievance"             element={<GrievanceOfficer />} />
               <Route path="/guidelines"            element={<CommunityGuidelines />} />

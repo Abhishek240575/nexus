@@ -7,29 +7,30 @@ import { validate }              from '../middlewares/validate.middleware';
 
 const router = Router();
 
-// ─── Search (must be before /:handle) ────────────────────────────────────────
+// ─── Search ───────────────────────────────────────────────────────────────────
 router.get('/search', searchLimiter, optionalAuth, ctrl.search);
 
-// ─── Me routes (must be before /:handle) ─────────────────────────────────────
+// ─── Profile ──────────────────────────────────────────────────────────────────
+router.get('/:handle',       optionalAuth, ctrl.getProfile);
+router.get('/:handle/posts', optionalAuth, ctrl.getUserPosts);
 router.patch('/me/profile',
   protect,
   [
     body('display_name').optional().trim().isLength({ max: 100 }),
     body('bio').optional().trim().isLength({ max: 160 }),
     body('location').optional().trim().isLength({ max: 100 }),
-    body('website').optional().trim(),
+    body('website').optional().trim().isURL(),
   ],
   validate,
   ctrl.updateProfile
 );
 
 // ─── Follow ───────────────────────────────────────────────────────────────────
-router.post('/:id/follow',   protect,      ctrl.followUser);
-router.get('/:id/followers', optionalAuth, ctrl.getFollowers);
-router.get('/:id/following', optionalAuth, ctrl.getFollowing);
+router.post('/:id/follow',    protect, ctrl.followUser);
+router.get('/:id/followers',  optionalAuth, ctrl.getFollowers);
+router.get('/:id/following',  optionalAuth, ctrl.getFollowing);
 
-// ─── Profile (must be after /me and /search) ──────────────────────────────────
-router.get('/:handle',       optionalAuth, ctrl.getProfile);
-router.get('/:handle/posts', optionalAuth, ctrl.getUserPosts);
+router.post('/me/onboarding', protect, ctrl.completeOnboarding);
+router.get('/suggestions',    protect, ctrl.getFollowSuggestions);
 
 export default router;
