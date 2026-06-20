@@ -21,7 +21,7 @@ export default function Login() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      const res = await authService.login(data);
+      const res = await authService.login(data as { identifier: string; password: string });
       const { user, access_token, refresh_token } = res.data.data;
       setAuth(user, access_token, refresh_token);
       connectSocket();

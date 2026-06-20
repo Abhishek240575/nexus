@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider }        from '@tanstack/react-query';
-import { QueryDevtools } from '@tanstack/react-query-devtools';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { useAuthStore }  from '@/stores/auth.store';
 import { useEffect }     from 'react';
 import { initPushNotifications } from '@/services/notifications.service';
@@ -30,6 +30,7 @@ const Compliance         = lazy(() => import('@/pages/Compliance'));
 const Legal              = lazy(() => import('@/pages/Legal'));
 const TermsOfService     = lazy(() => import('@/pages/Legal').then(m => ({ default: m.TermsOfService })));
 const Onboarding         = lazy(() => import('@/pages/Onboarding'));
+const Analytics          = lazy(() => import('@/pages/Analytics'));
 const PrivacyPolicy      = lazy(() => import('@/pages/Legal').then(m => ({ default: m.PrivacyPolicy })));
 const GrievanceOfficer   = lazy(() => import('@/pages/Legal').then(m => ({ default: m.GrievanceOfficer })));
 const CommunityGuidelines = lazy(() => import('@/pages/Legal').then(m => ({ default: m.CommunityGuidelines })));
@@ -63,13 +64,13 @@ const GuestRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 export default function App() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuth } = useAuthStore();
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuth) {
       initPushNotifications().catch(() => {});
     }
-  }, [isAuthenticated]);
+  }, [isAuth]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -125,7 +126,7 @@ export default function App() {
           </Routes>
         </Suspense>
       </BrowserRouter>
-      {import.meta.env.DEV && <QueryDevtools initialIsOpen={false} />}
+      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider>
   );
 }
