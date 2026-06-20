@@ -410,7 +410,7 @@ export default function PostComposer({
                 onClick={handleSubmit}
                 disabled={!canPost}
                 className="bg-brand hover:bg-brand-dark disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-4 py-1.5 rounded-full text-sm transition-colors">
-                {submitting || (showSchedule && scheduleDate && scheduleTime ? '📅 Schedule' : replyToId ? 'Reply' : 'Post')}
+                {submitting || (showSchedule && scheduleDate && scheduleTime ? 'Schedule' : replyToId ? 'Reply' : 'Post')}
               </button>
             </div>
           </div>
