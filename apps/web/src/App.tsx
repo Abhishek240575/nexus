@@ -112,7 +112,6 @@ export default function App() {
               <Route path="/settings"              element={<Settings />} />
               <Route path="/legal"                 element={<Legal />} />
               <Route path="/terms"                 element={<TermsOfService />} />
-              <Route path="/onboarding"            element={<Onboarding />} />
               <Route path="/privacy"               element={<PrivacyPolicy />} />
               <Route path="/grievance"             element={<GrievanceOfficer />} />
               <Route path="/guidelines"            element={<CommunityGuidelines />} />
@@ -123,6 +122,9 @@ export default function App() {
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
+
+            {/* Standalone — no layout */}
+            <Route path="/onboarding" element={<Onboarding />} />
           </Routes>
         </Suspense>
       </BrowserRouter>

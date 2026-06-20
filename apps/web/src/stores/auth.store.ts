@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+// One-time migration: clear old 'nexus-auth' key so stale sessions don't bleed through
+if (typeof window !== 'undefined' && localStorage.getItem('nexus-auth')) {
+  localStorage.removeItem('nexus-auth');
+  localStorage.removeItem('nexus-theme');
+}
+
 export interface AuthUser {
   id:           string;
   handle:       string;
