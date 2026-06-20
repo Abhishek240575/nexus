@@ -360,7 +360,7 @@ export default function PostComposer({
                       ? 'border-amber-400 text-amber-600 bg-amber-50 dark:bg-amber-900/20'
                       : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-amber-400 hover:text-amber-500'
                   }`}>
-                  👑 {isExclusive ? 'Exclusive' : 'Public'}
+                  {isExclusive ? '👑 Exclusive' : '🔓 Public'}
                 </button>
               )}
                 <button onClick={() => setShowLangMenu(s => !s)}
