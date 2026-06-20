@@ -66,15 +66,29 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
   }, [showMenu]);
 
   const LANGS = [
-    { code: 'hi', label: 'हिंदी' },
-    { code: 'en', label: 'English' },
-    { code: 'ta', label: 'தமிழ்' },
-    { code: 'te', label: 'తెలుగు' },
-    { code: 'bn', label: 'বাংলা' },
-    { code: 'mr', label: 'मराठी' },
-    { code: 'gu', label: 'ગુજરાતી' },
-    { code: 'kn', label: 'ಕನ್ನಡ' },
-    { code: 'ml', label: 'മലയാളം' },
+    // Indian languages
+    { code: 'hi', label: 'हिंदी',       group: 'Indian' },
+    { code: 'ta', label: 'தமிழ்',      group: 'Indian' },
+    { code: 'te', label: 'తెలుగు',     group: 'Indian' },
+    { code: 'bn', label: 'বাংলা',      group: 'Indian' },
+    { code: 'mr', label: 'मराठी',      group: 'Indian' },
+    { code: 'gu', label: 'ગુજરાતી',    group: 'Indian' },
+    { code: 'kn', label: 'ಕನ್ನಡ',      group: 'Indian' },
+    { code: 'ml', label: 'മലയാളം',     group: 'Indian' },
+    { code: 'pa', label: 'ਪੰਜਾਬੀ',     group: 'Indian' },
+    { code: 'ur', label: 'اردو',       group: 'Indian' },
+    { code: 'or', label: 'ଓଡ଼ିଆ',      group: 'Indian' },
+    // Global languages
+    { code: 'en', label: 'English',    group: 'Global' },
+    { code: 'ar', label: 'العربية',    group: 'Global' },
+    { code: 'zh', label: '中文',        group: 'Global' },
+    { code: 'ru', label: 'Русский',    group: 'Global' },
+    { code: 'fa', label: 'فارسی',      group: 'Global' },
+    { code: 'es', label: 'Español',    group: 'Global' },
+    { code: 'fr', label: 'Français',   group: 'Global' },
+    { code: 'de', label: 'Deutsch',    group: 'Global' },
+    { code: 'pt', label: 'Português',  group: 'Global' },
+    { code: 'nl', label: 'Nederlands', group: 'Global' },
   ];
 
   const handleTranslate = async (langCode: string) => {
@@ -319,13 +333,30 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
 
           {/* Language picker */}
           {showLangPicker && (
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {LANGS.map(l => (
-                <button key={l.code} onClick={e => { e.preventDefault(); handleTranslate(l.code); }}
-                  className="text-xs bg-gray-100 dark:bg-gray-800 hover:bg-brand hover:text-white text-gray-700 dark:text-gray-300 px-2.5 py-1 rounded-full transition-colors">
-                  {l.label}
-                </button>
-              ))}
+            <div className="mb-2 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden">
+              {/* Indian */}
+              <div className="px-3 pt-2 pb-1">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Indian Languages</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {LANGS.filter(l => l.group === 'Indian').map(l => (
+                    <button key={l.code} onClick={e => { e.preventDefault(); handleTranslate(l.code); }}
+                      className="text-xs bg-gray-100 dark:bg-gray-800 hover:bg-brand hover:text-white text-gray-700 dark:text-gray-300 px-2.5 py-1 rounded-full transition-colors">
+                      {l.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="border-t border-gray-100 dark:border-gray-800 px-3 pt-2 pb-2">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Global Languages</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {LANGS.filter(l => l.group === 'Global').map(l => (
+                    <button key={l.code} onClick={e => { e.preventDefault(); handleTranslate(l.code); }}
+                      className="text-xs bg-gray-100 dark:bg-gray-800 hover:bg-brand hover:text-white text-gray-700 dark:text-gray-300 px-2.5 py-1 rounded-full transition-colors">
+                      {l.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 

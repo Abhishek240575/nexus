@@ -37,7 +37,7 @@ const createNotification = async (data: {
 
 export const createPost = async (req: Request, res: Response): Promise<void> => {
   const { id: userId } = (req as AuthenticatedRequest).user;
-  const { content, media_urls = [], reply_to_id, quote_of_id, community_id, scheduled_at } = req.body;
+  const { content, media_urls = [], reply_to_id, quote_of_id, community_id, scheduled_at, language } = req.body;
 
   if (!content && (!media_urls || media_urls.length === 0)) {
     R.badRequest(res, 'Post must have content or media'); return;
@@ -69,10 +69,10 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
   }
 
   const { rows } = await db.query(
-    `INSERT INTO posts (user_id, content, media_urls, reply_to_id, quote_of_id, community_id, scheduled_at, is_published, priority_boost)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `INSERT INTO posts (user_id, content, media_urls, reply_to_id, quote_of_id, community_id, scheduled_at, is_published, priority_boost, language)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING *`,
-    [userId, content || null, media_urls, reply_to_id || null, quote_of_id || null, community_id || null, scheduled_at || null, !scheduled_at, priorityBoost]
+    [userId, content || null, media_urls, reply_to_id || null, quote_of_id || null, community_id || null, scheduled_at || null, !scheduled_at, priorityBoost, language || null]
   );
 
   const post = rows[0];

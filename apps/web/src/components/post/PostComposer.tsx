@@ -44,6 +44,37 @@ export default function PostComposer({
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('');
 
+  // Language selection for posting
+  const [postLang,      setPostLang]      = useState('auto');
+  const [showLangMenu,  setShowLangMenu]  = useState(false);
+
+  const POST_LANGUAGES = [
+    { code: 'auto', label: 'Auto-detect' },
+    { code: 'en',   label: 'English' },
+    { code: 'hi',   label: 'हिंदी' },
+    { code: 'ta',   label: 'தமிழ்' },
+    { code: 'te',   label: 'తెలుగు' },
+    { code: 'bn',   label: 'বাংলা' },
+    { code: 'mr',   label: 'मराठी' },
+    { code: 'gu',   label: 'ગુજરાતી' },
+    { code: 'kn',   label: 'ಕನ್ನಡ' },
+    { code: 'ml',   label: 'മലയാളം' },
+    { code: 'pa',   label: 'ਪੰਜਾਬੀ' },
+    { code: 'ur',   label: 'اردو' },
+    { code: 'or',   label: 'ଓଡ଼ିଆ' },
+    { code: 'ar',   label: 'العربية' },
+    { code: 'zh',   label: '中文' },
+    { code: 'ru',   label: 'Русский' },
+    { code: 'fa',   label: 'فارسی' },
+    { code: 'es',   label: 'Español' },
+    { code: 'fr',   label: 'Français' },
+    { code: 'de',   label: 'Deutsch' },
+    { code: 'pt',   label: 'Português' },
+    { code: 'nl',   label: 'Nederlands' },
+  ];
+
+  const selectedLangLabel = POST_LANGUAGES.find(l => l.code === postLang)?.label || 'Auto-detect';
+
   const TIER_LIMITS: Record<string, number> = { free: 280, plus: 1000, pro: 1000, enterprise: 1000 };
   const MAX    = TIER_LIMITS[user?.premium_tier || 'free'] || 280;
   const remain = MAX - content.length;
@@ -118,6 +149,7 @@ export default function PostComposer({
         reply_to_id:  replyToId,
         media_urls,
         scheduled_at,
+        language:     postLang === 'auto' ? undefined : postLang,
       });
 
       // If poll, create it separately
@@ -310,6 +342,26 @@ export default function PostComposer({
                 className={`p-2 rounded-full transition-colors ${showSchedule ? 'bg-blue-50 dark:bg-blue-900/20 text-brand' : 'text-brand hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}>
                 <Calendar size={18} />
               </button>
+
+              {/* Language selector */}
+              <div className="relative">
+                <button onClick={() => setShowLangMenu(s => !s)}
+                  title="Post language"
+                  className={`px-2 py-1 rounded-full text-xs font-medium transition-colors border ${showLangMenu ? 'border-brand text-brand bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-brand hover:text-brand'}`}>
+                  {postLang === 'auto' ? '🌐 Auto' : selectedLangLabel}
+                </button>
+                {showLangMenu && (
+                  <div className="absolute bottom-9 left-0 z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl w-44 py-1 max-h-64 overflow-y-auto">
+                    <p className="text-xs font-semibold text-gray-400 px-3 pt-2 pb-1">Posting language</p>
+                    {POST_LANGUAGES.map(l => (
+                      <button key={l.code} onClick={() => { setPostLang(l.code); setShowLangMenu(false); }}
+                        className={`w-full text-left px-3 py-1.5 text-sm transition-colors ${postLang === l.code ? 'text-brand bg-brand/5 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+                        {l.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
             </div>
 
