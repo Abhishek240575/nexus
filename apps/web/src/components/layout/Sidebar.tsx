@@ -57,11 +57,11 @@ export default function Sidebar() {
     <div className="flex flex-col h-full px-3 py-4">
       <div className="px-3 py-2 mb-2 text-2xl font-bold text-brand">Deemona</div>
 
-      <nav className="flex-1 space-y-1">
+      <nav className="flex-1 overflow-y-auto space-y-0.5 scrollbar-hide">
         {navItems.map(({ to, icon: Icon, label, badge }) => (
           <NavLink key={to} to={to} end={to === '/'}
             className={({ isActive }) => clsx(
-              'flex items-center gap-4 px-3 py-3 rounded-full text-[15px] transition-colors relative',
+              'flex items-center gap-4 px-3 py-2.5 rounded-full text-[15px] transition-colors relative',
               isActive
                 ? 'font-semibold text-gray-900 dark:text-white'
                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900'
@@ -79,26 +79,27 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <button className="mt-2 mb-4 bg-brand hover:bg-brand-dark text-white font-semibold py-3 px-6 rounded-full transition-colors xl:w-full text-center">
-        <span className="hidden xl:block">Post</span>
-        <span className="xl:hidden text-xl">+</span>
-      </button>
+      <div className="mt-2 flex-shrink-0">
+        <button className="mb-3 bg-brand hover:bg-brand-dark text-white font-semibold py-3 px-6 rounded-full transition-colors xl:w-full text-center">
+          <span className="hidden xl:block">Post</span>
+          <span className="xl:hidden text-xl">+</span>
+        </button>
 
-      {user && (
-        <div className="flex items-center gap-3 px-3 py-3 rounded-full hover:bg-gray-100 dark:hover:bg-gray-900 cursor-pointer group">
-          <img
-            src={user.avatar_url || `https://ui-avatars.com/api/?name=${user.handle}&background=1d9bf0&color=fff`}
-            alt={user.handle} className="w-9 h-9 rounded-full object-cover" />
-          <div className="hidden xl:flex flex-col flex-1 min-w-0">
-            <span className="text-sm font-semibold text-gray-900 dark:text-white truncate">{user.display_name || user.handle}</span>
-            <span className="text-xs text-gray-500 truncate">@{user.handle}</span>
+        {user && (
+          <div className="flex items-center gap-3 px-3 py-3 rounded-full hover:bg-gray-100 dark:hover:bg-gray-900 cursor-pointer group">
+            <img
+              src={user.avatar_url || `https://ui-avatars.com/api/?name=${user.handle}&background=1d9bf0&color=fff`}
+              alt={user.handle} className="w-9 h-9 rounded-full object-cover" />
+            <div className="hidden xl:flex flex-col flex-1 min-w-0">
+              <span className="text-sm font-semibold text-gray-900 dark:text-white truncate">{user.display_name || user.handle}</span>
+              <span className="text-xs text-gray-500 truncate">@{user.handle}</span>
+            </div>
+            <button onClick={handleLogout} className="hidden xl:block opacity-0 group-hover:opacity-100 transition-opacity" title="Log out">
+              <LogOut size={16} className="text-gray-400 hover:text-red-500" />
+            </button>
           </div>
-          <button onClick={handleLogout} className="hidden xl:block opacity-0 group-hover:opacity-100 transition-opacity" title="Log out">
-            <LogOut size={16} className="text-gray-400 hover:text-red-500" />
-          </button>
-        </div>
-      )}
-      <NavLink to="/legal" className="px-3 py-1 text-xs text-gray-400 hover:text-brand transition-colors block">
+        )}
+      </div>      <NavLink to="/legal" className="px-3 py-1 text-xs text-gray-400 hover:text-brand transition-colors block">
         Legal & Compliance
       </NavLink>
       <button
