@@ -44,9 +44,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
   // Store email verification token in Redis (24h TTL)
   await redis.setex(`verify:${verifyToken}`, 86400, user.id);
-  sendVerificationEmail(email, handle, verifyToken).catch(err => 
-  console.error('[Email] Failed to send verification email:', err)
-);
+  await sendVerificationEmail(email, handle, verifyToken);
 
   const accessToken  = signAccessToken(user);
   const refreshToken = signRefreshToken(user.id);
@@ -88,6 +86,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       avatar_url:   user.avatar_url,
       verified:     user.verified,
       premium_tier: user.premium_tier,
+      is_onboarded: user.is_onboarded ?? false,
     },
     access_token:  accessToken,
     refresh_token: refreshToken,
@@ -147,17 +146,19 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
 // ─── Verify email ─────────────────────────────────────────────────────────────
 export const verifyEmail = async (req: Request, res: Response): Promise<void> => {
   const { token } = req.query as { token: string };
-  if (!token) { R.badRequest(res, 'Token required'); return; }
+  if (!token) { res.redirect(`${process.env.FRONTEND_URL || 'https://nexus-web-bjks.onrender.com'}/login?error=invalid_token`); return; }
 
   const userId = await redis.get(`verify:${token}`);
-  if (!userId) { R.badRequest(res, 'Invalid or expired verification link'); return; }
+  if (!userId) { res.redirect(`${process.env.FRONTEND_URL || 'https://nexus-web-bjks.onrender.com'}/login?error=expired_token`); return; }
 
   await db.query(
     'UPDATE users SET email_verified = TRUE, verified = TRUE WHERE id = $1',
     [userId]
   );
   await redis.del(`verify:${token}`);
-  R.ok(res, null, 'Email verified');
+
+  // Redirect to login with success message
+  res.redirect(`${process.env.FRONTEND_URL || 'https://nexus-web-bjks.onrender.com'}/login?verified=1`);
 };
 
 // ─── Forgot password ──────────────────────────────────────────────────────────

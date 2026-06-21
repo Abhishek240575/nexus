@@ -1,7 +1,7 @@
 import { useForm }       from 'react-hook-form';
 import { zodResolver }   from '@hookform/resolvers/zod';
 import { z }             from 'zod';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { authService }   from '@/services/auth.service';
 import { useAuthStore }  from '@/stores/auth.store';
 import { connectSocket } from '@/services/socket';
@@ -14,10 +14,14 @@ type FormData = z.infer<typeof schema>;
 
 export default function Login() {
   const navigate   = useNavigate();
+  const [params]   = useSearchParams();
   const { setAuth } = useAuthStore();
   const { register, handleSubmit, formState: { errors, isSubmitting }, setError } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
+
+  const verified   = params.get('verified') === '1';
+  const tokenError = params.get('error');
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -25,7 +29,7 @@ export default function Login() {
       const { user, access_token, refresh_token } = res.data.data;
       setAuth(user, access_token, refresh_token);
       connectSocket();
-      navigate('/');
+      navigate(user.is_onboarded === false ? '/onboarding' : '/');
     } catch (err: any) {
       setError('root', { message: err.response?.data?.error || 'Login failed' });
     }
@@ -34,6 +38,17 @@ export default function Login() {
   return (
     <div>
       <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Sign in to Deemona</h1>
+
+      {verified && (
+        <div className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-sm rounded-xl px-4 py-3 mb-6">
+          Email verified successfully! You can now sign in.
+        </div>
+      )}
+      {tokenError && (
+        <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-xl px-4 py-3 mb-6">
+          {tokenError === 'expired_token' ? 'Verification link has expired. Please register again.' : 'Invalid verification link.'}
+        </div>
+      )}
       <p className="text-gray-500 mb-8">Welcome back!</p>
 
       {/* OAuth */}
