@@ -44,16 +44,14 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
   // Store email verification token in Redis (24h TTL)
   await redis.setex(`verify:${verifyToken}`, 86400, user.id);
-  await sendVerificationEmail(email, handle, verifyToken);
 
-  const accessToken  = signAccessToken(user);
-  const refreshToken = signRefreshToken(user.id);
-  await storeRefreshToken(user.id, refreshToken);
+  // Send verification email — non-blocking, don't fail registration if email fails
+  sendVerificationEmail(email, handle, verifyToken).catch(err => {
+    console.error('[Email] Failed to send verification email:', err?.message);
+  });
 
   R.created(res, {
-    user: { id: user.id, handle: user.handle, email: user.email, premium_tier: user.premium_tier },
-    access_token:  accessToken,
-    refresh_token: refreshToken,
+    message: 'Account created. Please check your email to verify your account.',
   }, 'Account created. Please verify your email.');
 };
 
