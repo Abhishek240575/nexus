@@ -67,7 +67,7 @@ export default function Profile() {
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 size={24} className="animate-spin text-brand" /></div>;
   if (!profile)  return <div className="text-center py-12 text-gray-400">User not found</div>;
 
-  const isMe       = user?.handle === handle;
+  const isMe = user?.handle === handle || user?.handle === profile.handle;
   const avatarUrl  = profile.avatar_url  || `https://ui-avatars.com/api/?name=${profile.handle}&background=1d9bf0&color=fff&size=80`;
   const headerUrl  = profile.header_url;
 

@@ -4,8 +4,8 @@ import { api } from '@/services/api.client';
 export const notificationsService = {
   getAll:     (cursor?: string) =>
     api.get('/api/notifications', { params: cursor ? { cursor } : {} }),
-  getUnread:  () => api.get('/api/notifications/unread-count'),
-  markAllRead:() => api.post('/api/notifications/mark-read'),
+  getUnread:  () => api.get('/api/notifications/unread'),
+  markAllRead:() => api.patch('/api/notifications/read-all'),
 };
 
 // ─── Messages ─────────────────────────────────────────────────────────────────
