@@ -130,9 +130,9 @@ export default function App() {
             <Route path="/onboarding" element={<Onboarding />} />
           </Routes>
         </Suspense>
+        <CookieBanner />
       </BrowserRouter>
       {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-      <CookieBanner />
     </QueryClientProvider>
   );
 }

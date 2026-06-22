@@ -30,6 +30,7 @@ import monetizationRoutes  from './routes/monetization.routes';
 import complianceRoutes    from './routes/compliance.routes';
 
 const app = express();
+app.set('trust proxy', 1); // Trust first proxy (Render's load balancer)
 
 // ─── Security & parsing ───────────────────────────────────────────────────────
 app.use(helmet());

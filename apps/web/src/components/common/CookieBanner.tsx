@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { api } from '@/services/api.client';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -35,9 +34,9 @@ export default function CookieBanner() {
           <p className="text-xs text-gray-500 leading-relaxed">
             Deemona uses essential cookies for authentication and security, and optional cookies for analytics and personalisation.
             By clicking "Accept All", you consent to our use of cookies as described in our{' '}
-            <Link to="/privacy" className="text-brand hover:underline">Privacy Policy</Link>.
+            <a href="/privacy" className="text-brand hover:underline">Privacy Policy</a>.
             You can manage preferences in{' '}
-            <Link to="/settings/privacy" className="text-brand hover:underline">Settings</Link>.
+            <a href="/privacy-center" className="text-brand hover:underline">Privacy Center</a>.
           </p>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
