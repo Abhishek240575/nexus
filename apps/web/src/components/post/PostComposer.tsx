@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react';
-import { Image, Smile, BarChart2, Calendar, X, Plus, Trash2 } from 'lucide-react';
+import { Image, Smile, BarChart2, Calendar, X, Plus, Trash2, Video } from 'lucide-react';
 import { useAuthStore }    from '@/stores/auth.store';
 import { postsService }    from '@/services/posts.service';
 import { useQueryClient }  from '@tanstack/react-query';
 import EmojiPicker         from 'emoji-picker-react';
-import { api }             from '@/services/api.client';
+import { mediaService }    from '@/services/media.service';
 
 interface PostComposerProps {
   replyToId?:  string;
@@ -59,6 +59,12 @@ export default function PostComposer({
   const [mediaFiles,    setMediaFiles]    = useState<File[]>([]);
   const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
   const [uploading,     setUploading]     = useState(false);
+  const [uploadPct,     setUploadPct]     = useState(0);
+  const [videoFile,     setVideoFile]     = useState<File | null>(null);
+  const [videoPreview,  setVideoPreview]  = useState<string | null>(null);
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [videoError,    setVideoError]    = useState('');
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const [showEmoji,     setShowEmoji]     = useState(false);
   const [showPoll,      setShowPoll]      = useState(false);
   const [pollOptions,   setPollOptions]   = useState<PollOption[]>([{ text: '' }, { text: '' }]);
@@ -66,26 +72,36 @@ export default function PostComposer({
   const [postLang,      setPostLang]      = useState('auto');
   const [showLangMenu,  setShowLangMenu]  = useState(false);
 
+  const PAID_TIERS = ['plus', 'pro', 'enterprise'];
+  const canUploadVideo = PAID_TIERS.includes(user?.premium_tier || '');
   const selectedLangLabel = POST_LANGUAGES.find(l => l.code === postLang)?.label || 'Auto';
 
   const handleSubmit = async () => {
     if (submitting) return;
-    if (!content.trim() && mediaFiles.length === 0 && !showPoll) return;
+    if (!content.trim() && mediaFiles.length === 0 && !showPoll && !videoFile) return;
 
     setSubmitting('Posting...');
     setError('');
+    setUploadPct(0);
 
     try {
       let media_urls: string[] = [];
 
+      // Upload video via R2 presigned URL
+      if (videoFile) {
+        setUploading(true);
+        const { public_url } = await mediaService.uploadMedia(videoFile, setUploadPct);
+        media_urls = [public_url];
+        setUploading(false);
+      }
+
+      // Upload images via R2 presigned URL
       if (mediaFiles.length > 0) {
         setUploading(true);
         const uploads = await Promise.all(
           mediaFiles.map(async (file) => {
-            const formData = new FormData();
-            formData.append('file', file);
-            const res = await api.post('/api/media/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-            return res.data.data.url as string;
+            const { public_url } = await mediaService.uploadMedia(file);
+            return public_url;
           })
         );
         media_urls = uploads;
@@ -102,6 +118,9 @@ export default function PostComposer({
       setContent('');
       setMediaFiles([]);
       setMediaPreviews([]);
+      setVideoFile(null);
+      setVideoPreview(null);
+      setVideoDuration(0);
       setShowPoll(false);
       setShowEmoji(false);
       setShowLangMenu(false);
@@ -111,18 +130,62 @@ export default function PostComposer({
       queryClient.invalidateQueries({ queryKey: ['feed'] });
       onPosted?.();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Could not post. Please try again.');
+      setError(err.response?.data?.error || err.message || 'Could not post. Please try again.');
     } finally {
       setSubmitting('');
       setUploading(false);
+      setUploadPct(0);
     }
+  };
+
+  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setVideoError('');
+
+    // Validate type
+    if (!['video/mp4', 'video/quicktime', 'video/webm'].includes(file.type)) {
+      setVideoError('Only MP4, MOV, or WebM videos are supported.');
+      return;
+    }
+
+    // Validate size (50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      setVideoError('Video must be under 50MB.');
+      return;
+    }
+
+    // Validate duration (30 seconds)
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(url);
+      if (video.duration > 30) {
+        setVideoError('Video must be 30 seconds or shorter.');
+        return;
+      }
+      setVideoDuration(Math.round(video.duration));
+      setVideoFile(file);
+      setVideoPreview(URL.createObjectURL(file));
+      // Clear images if video selected
+      setMediaFiles([]);
+      setMediaPreviews([]);
+    };
+    video.src = url;
+    e.target.value = '';
+  };
+
+  const removeVideo = () => {
+    setVideoFile(null);
+    setVideoPreview(null);
+    setVideoDuration(0);
+    setVideoError('');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSubmit();
   };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files      = Array.from(e.target.files || []).slice(0, 4 - mediaFiles.length);
     const newFiles    = [...mediaFiles,    ...files].slice(0, 4);
     const newPreviews = [...mediaPreviews, ...files.map(f => URL.createObjectURL(f))].slice(0, 4);
@@ -140,7 +203,7 @@ export default function PostComposer({
   const MAX    = TIER_LIMITS[user?.premium_tier || 'free'] || 280;
   const remain = MAX - content.length;
   const pct    = Math.min((content.length / MAX) * 100, 100);
-  const canPost = (content.trim().length > 0 || mediaFiles.length > 0 || showPoll) && remain >= 0 && !submitting;
+  const canPost = (content.trim().length > 0 || mediaFiles.length > 0 || showPoll || videoFile !== null) && remain >= 0 && !submitting;
 
   if (!user) return null;
 
@@ -167,6 +230,31 @@ export default function PostComposer({
           />
 
           {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
+          {videoError && <p className="text-red-500 text-sm mb-2">{videoError}</p>}
+
+          {/* Video preview */}
+          {videoPreview && (
+            <div className="relative rounded-2xl overflow-hidden mb-3 bg-black">
+              <video src={videoPreview} controls className="w-full max-h-64 rounded-2xl" />
+              <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-0.5 rounded-full">
+                {videoDuration}s
+              </div>
+              <button onClick={removeVideo}
+                className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-0.5 hover:bg-black/80">
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
+          {/* Upload progress */}
+          {uploading && uploadPct > 0 && (
+            <div className="mb-3">
+              <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                <div className="h-full bg-brand transition-all duration-300 rounded-full" style={{ width: `${uploadPct}%` }} />
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Uploading... {uploadPct}%</p>
+            </div>
+          )}
 
           {mediaPreviews.length > 0 && (
             <div className="grid grid-cols-2 gap-2 mb-3">
@@ -251,13 +339,31 @@ export default function PostComposer({
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-800">
             <div className="flex items-center gap-1 -ml-1 flex-wrap">
 
-              <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handleFileChange} />
+              <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
               <button onClick={() => fileInputRef.current?.click()}
-                disabled={mediaFiles.length >= 4 || showPoll}
+                disabled={mediaFiles.length >= 4 || showPoll || !!videoFile}
                 title="Add image"
                 className="p-2 text-brand hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                 <Image size={18} />
               </button>
+
+              {/* Video upload — paid users only */}
+              <input ref={videoInputRef} type="file" accept="video/mp4,video/quicktime,video/webm" className="hidden" onChange={handleVideoSelect} />
+              {canUploadVideo ? (
+                <button onClick={() => videoInputRef.current?.click()}
+                  disabled={!!videoFile || mediaFiles.length > 0 || showPoll}
+                  title="Add short video (max 30s)"
+                  className={`p-2 rounded-full transition-colors ${videoFile ? 'text-brand bg-blue-50 dark:bg-blue-900/20' : 'text-brand hover:bg-blue-50 dark:hover:bg-blue-900/20'} disabled:opacity-40 disabled:cursor-not-allowed`}>
+                  <Video size={18} />
+                </button>
+              ) : (
+                <button
+                  title="Short video upload requires Plus or higher"
+                  onClick={() => window.location.href = '/premium'}
+                  className="p-2 rounded-full text-gray-300 dark:text-gray-600 hover:text-brand transition-colors">
+                  <Video size={18} />
+                </button>
+              )}
 
               <button onClick={() => setShowEmoji(s => !s)}
                 title="Add emoji"

@@ -415,14 +415,33 @@ export default function PostCard({ post, onDelete, showThread }: PostCardProps) 
           )}
 
           {/* Media */}
-          {post.media_urls?.length > 0 && (
-            <div className={clsx('grid gap-1 mb-2 rounded-xl overflow-hidden',
-              post.media_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2')}>
-              {post.media_urls.slice(0, 4).map((url, i) => (
-                <img key={i} src={url} alt="" className="w-full object-cover max-h-64" />
-              ))}
-            </div>
-          )}
+          {post.media_urls?.length > 0 && (() => {
+            const firstUrl = post.media_urls[0];
+            const isVideo = firstUrl.match(/\.(mp4|mov|webm)(\?|$)/i) ||
+                            firstUrl.includes('/videos/');
+            if (isVideo) {
+              return (
+                <div className="mb-2 rounded-xl overflow-hidden bg-black">
+                  <video
+                    src={firstUrl}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    className="w-full max-h-72 rounded-xl"
+                    style={{ aspectRatio: '9/16', maxHeight: '20rem', objectFit: 'contain' }}
+                  />
+                </div>
+              );
+            }
+            return (
+              <div className={clsx('grid gap-1 mb-2 rounded-xl overflow-hidden',
+                post.media_urls.length === 1 ? 'grid-cols-1' : 'grid-cols-2')}>
+                {post.media_urls.slice(0, 4).map((url, i) => (
+                  <img key={i} src={url} alt="" className="w-full object-cover max-h-64" />
+                ))}
+              </div>
+            );
+          })()}
 
           {/* Actions */}
           <div className="flex items-center justify-between mt-1 -ml-2 max-w-xs">

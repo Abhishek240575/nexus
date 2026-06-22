@@ -19,12 +19,14 @@ import analyticsRoutes     from './routes/analytics.routes';
 import moderationRoutes    from './routes/moderation.routes';
 import debatesRoutes       from './routes/debates.routes';
 import spacesRoutes        from './routes/spaces.routes';
+import mediaRoutes         from './routes/media.routes';
 import narrativeRoutes     from './routes/narrative.routes';
 import translationRoutes   from './routes/translation.routes';
 import communityModRoutes  from './routes/community-mod.routes';
 import listsRoutes         from './routes/lists.routes';
 import billingRoutes       from './routes/billing.routes';
 import monetizationRoutes  from './routes/monetization.routes';
+import complianceRoutes    from './routes/compliance.routes';
 
 const app = express();
 
@@ -64,12 +66,14 @@ app.use('/api/analytics',     analyticsRoutes);
 app.use('/api/moderation',    moderationRoutes);
 app.use('/api/debates',       debatesRoutes);
 app.use('/api/spaces',        spacesRoutes);
+app.use('/api/media',         mediaRoutes);
 app.use('/api/narrative',     narrativeRoutes);
 app.use('/api/translate',    translationRoutes);
 app.use('/api/communities/:slug/mod', communityModRoutes);
 app.use('/api/lists',             listsRoutes);
 app.use('/api/billing',           billingRoutes);
 app.use('/api/monetization',      monetizationRoutes);
+app.use('/api/compliance',        complianceRoutes);
 
 // ─── Error handling ───────────────────────────────────────────────────────────
 app.use(notFoundHandler);
