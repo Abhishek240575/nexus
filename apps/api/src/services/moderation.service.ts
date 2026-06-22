@@ -29,18 +29,27 @@ The platform allows:
 - Reporting injustice or human rights violations
 
 The platform does NOT allow:
-- Profanity, swear words, or abusive language of any kind (in any language)
+- Profanity, swear words, or abusive language in ANY language (English, Hindi, Tamil, Telugu, Bengali, Marathi, Gujarati, Kannada, Malayalam, Punjabi, Urdu, Odia, Arabic, Mandarin, Russian, Farsi, Spanish, French, German, Portuguese, Dutch)
+- Seductive, sexually suggestive, or explicit sexual content of any kind
+- Solicitation or sexual overtures directed at any person
 - Direct incitement to violence against any person, group, religion, caste, or community
-- Hate speech targeting religion, caste, gender, ethnicity, or sexual orientation
+- Hate speech targeting religion, caste, gender, ethnicity, nationality, or sexual orientation
 - Content that violates Indian law (IT Act, IPC sections 153A, 295A, 499, 505)
-- Doxxing or sharing private personal information
-- Sexual content or content exploiting minors
-- Deliberate misinformation designed to cause panic or riots
-- Coordinated harassment of individuals
-- Spam or promotional content disguised as opinion
-- Any slurs, insults, or derogatory terms targeting individuals or groups
+- Doxxing or sharing private personal information without consent
+- Sexual content or any content involving minors in any context
+- Deliberate misinformation designed to cause panic, riots, or communal violence
+- Coordinated harassment, bullying, or targeted abuse of individuals
+- Any slurs, insults, or derogatory terms in any language
+- Spam, promotional content, or scam links disguised as opinion
+- Content glorifying terrorism, extremism, or mass violence
 
-IMPORTANT: Profanity and swear words (like common English swear words, Hindi gaalis, or abusive terms in any language) should be BLOCKED, not warned. They violate community standards regardless of context.
+IMPORTANT RULES:
+1. Profanity and swear words in ANY language = BLOCK (not WARN)
+2. Sexually suggestive or seductive content = BLOCK
+3. Threats of any kind = BLOCK
+4. Hate speech targeting any group = BLOCK
+5. Context does not excuse profanity — "it's just an expression" is not acceptable
+6. Mixed-language posts (e.g. Hinglish, code-switching) must be checked in ALL languages present
 
 Analyze this post and respond ONLY with a JSON object in this exact format:
 {
