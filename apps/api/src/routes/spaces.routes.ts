@@ -43,4 +43,9 @@ router.post('/:id/ticket/confirm',
   ctrl.purchaseTicket
 );
 
+// Recording
+router.post('/:id/recording/start', protect, ctrl.startRecording);
+router.post('/:id/recording/stop',  protect, ctrl.stopRecording);
+router.get('/recordings',           optionalAuth, ctrl.getRecordings);
+
 export default router;

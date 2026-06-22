@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link }  from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -13,18 +13,21 @@ import { useAuthStore } from '@/stores/auth.store';
 import { formatDistanceToNowStrict } from 'date-fns';
 
 const spacesService = {
-  getAll:       ()         => api.get('/api/spaces'),
-  getOne:       (id: string) => api.get(`/api/spaces/${id}`),
+  getAll:          ()           => api.get('/api/spaces'),
+  getOne:          (id: string) => api.get(`/api/spaces/${id}`),
   getParticipants: (id: string) => api.get(`/api/spaces/${id}/participants`),
-  create:       (data: any) => api.post('/api/spaces', data),
-  join:         (id: string) => api.post(`/api/spaces/${id}/join`),
-  leave:        (id: string) => api.post(`/api/spaces/${id}/leave`),
-  end:          (id: string) => api.post(`/api/spaces/${id}/end`),
-  raiseHand:    (id: string, raised: boolean) => api.post(`/api/spaces/${id}/raise-hand`, { raised }),
-  promote:      (id: string, userId: string) => api.post(`/api/spaces/${id}/promote/${userId}`),
+  create:          (data: any)  => api.post('/api/spaces', data),
+  join:            (id: string) => api.post(`/api/spaces/${id}/join`),
+  leave:           (id: string) => api.post(`/api/spaces/${id}/leave`),
+  end:             (id: string) => api.post(`/api/spaces/${id}/end`),
+  raiseHand:       (id: string, raised: boolean) => api.post(`/api/spaces/${id}/raise-hand`, { raised }),
+  promote:         (id: string, userId: string)  => api.post(`/api/spaces/${id}/promote/${userId}`),
+  startRecording:  (id: string) => api.post(`/api/spaces/${id}/recording/start`),
+  stopRecording:   (id: string) => api.post(`/api/spaces/${id}/recording/stop`),
+  getRecordings:   ()           => api.get('/api/spaces/recordings'),
 };
 
-// â”€â”€â”€ In-Room UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── In-Room UI ───────────────────────────────────────────────────────────────
 function SpaceRoom({ space, token, role, onLeave }: {
   space: any; token: string; role: string; onLeave: () => void;
 }) {
@@ -44,6 +47,12 @@ function SpaceRoom({ space, token, role, onLeave }: {
     onSuccess:  () => { queryClient.invalidateQueries({ queryKey: ['spaces'] }); onLeave(); },
   });
 
+  const [isRecording, setIsRecording] = useState(!!space.egress_id);
+  const recordMutation = useMutation({
+    mutationFn: () => isRecording ? spacesService.stopRecording(space.id) : spacesService.startRecording(space.id),
+    onSuccess:  () => setIsRecording(r => !r),
+  });
+
   const handMutation = useMutation({
     mutationFn: (raised: boolean) => spacesService.raiseHand(space.id, raised),
     onSuccess:  (_: any, raised: boolean) => setHandRaised(raised),
@@ -61,8 +70,9 @@ function SpaceRoom({ space, token, role, onLeave }: {
         if (reason === 'leave' || reason === 'kicked' || reason === 'room_deleted') {
           onLeave();
         }
-        // On network hiccup or token expiry â€” don't close, LiveKit will reconnect
+        // On network hiccup or token expiry — don't close, LiveKit will reconnect
       }}
+      options={{ reconnectPolicy: { maxRetries: 5 } }}
     >
       <RoomAudioRenderer />
       <div className="flex flex-col h-screen max-h-screen bg-gray-950">
@@ -107,12 +117,23 @@ function SpaceRoom({ space, token, role, onLeave }: {
             )}
 
             {role === 'host' ? (
-              <button
-                onClick={() => endMutation.mutate()}
-                disabled={endMutation.isPending}
-                className="w-14 h-14 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center text-white transition-colors">
-                <PhoneOff size={22} />
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => recordMutation.mutate()}
+                  disabled={recordMutation.isPending}
+                  title={isRecording ? 'Stop recording' : 'Start recording'}
+                  className={`w-14 h-14 rounded-full flex items-center justify-center text-white transition-colors ${
+                    isRecording ? 'bg-red-600 animate-pulse hover:bg-red-700' : 'bg-gray-700 hover:bg-gray-600'
+                  }`}>
+                  <span className="text-xl">{isRecording ? '⏹' : '⏺'}</span>
+                </button>
+                <button
+                  onClick={() => endMutation.mutate()}
+                  disabled={endMutation.isPending}
+                  className="w-14 h-14 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center text-white transition-colors">
+                  <PhoneOff size={22} />
+                </button>
+              </div>
             ) : (
               <button
                 onClick={() => leaveMutation.mutate()}
@@ -124,7 +145,7 @@ function SpaceRoom({ space, token, role, onLeave }: {
           </div>
           <p className="text-center text-xs text-gray-500 mt-2">
             {role === 'host' ? 'You are the host' : role === 'speaker' ? 'You are a speaker' : 'You are listening'}
-            {handRaised && ' Â· Hand raised âœ‹'}
+            {handRaised && ' · Hand raised ✋'}
           </p>
         </div>
       </div>
@@ -152,7 +173,7 @@ function ParticipantGrid({ spaceId, hostId, myRole }: { spaceId: string; hostId:
   return (
     <div>
       {/* Speakers */}
-      <p className="text-xs text-gray-500 mb-3">Speakers Â· {speakers.length}</p>
+      <p className="text-xs text-gray-500 mb-3">Speakers · {speakers.length}</p>
       <div className="grid grid-cols-3 gap-4 mb-6">
         {speakers.map((p: any) => (
           <div key={p.user_id} className="flex flex-col items-center gap-2">
@@ -177,7 +198,7 @@ function ParticipantGrid({ spaceId, hostId, myRole }: { spaceId: string; hostId:
       {/* Hand raisers */}
       {handRaisers.length > 0 && myRole === 'host' && (
         <div className="mb-4">
-          <p className="text-xs text-yellow-400 mb-2">âœ‹ Raised hands Â· {handRaisers.length}</p>
+          <p className="text-xs text-yellow-400 mb-2">✋ Raised hands · {handRaisers.length}</p>
           {handRaisers.map((p: any) => (
             <div key={p.user_id} className="flex items-center justify-between py-2 border-b border-gray-800">
               <div className="flex items-center gap-2">
@@ -195,7 +216,7 @@ function ParticipantGrid({ spaceId, hostId, myRole }: { spaceId: string; hostId:
       )}
 
       {/* Listeners */}
-      <p className="text-xs text-gray-500 mb-3">Listeners Â· {listeners.length}</p>
+      <p className="text-xs text-gray-500 mb-3">Listeners · {listeners.length}</p>
       <div className="flex flex-wrap gap-2">
         {listeners.map((p: any) => (
           <div key={p.user_id} className="flex flex-col items-center gap-1">
@@ -209,7 +230,7 @@ function ParticipantGrid({ spaceId, hostId, myRole }: { spaceId: string; hostId:
   );
 }
 
-// â”€â”€â”€ Space Detail (join page) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Space Detail (join page) ─────────────────────────────────────────────────
 declare global {
   interface Window { Razorpay: any; }
 }
@@ -301,7 +322,7 @@ function SpaceDetail({ id }: { id: string }) {
 
   return (
     <div className="px-4 py-6 max-w-sm mx-auto text-center">
-      <Link to="/spaces" className="text-brand text-sm hover:underline mb-6 block text-left">â† All Spaces</Link>
+      <Link to="/spaces" className="text-brand text-sm hover:underline mb-6 block text-left">← All Spaces</Link>
       <div className="w-20 h-20 rounded-full bg-brand mx-auto flex items-center justify-center mb-4">
         <img src={space.host_avatar || `https://ui-avatars.com/api/?name=${space.host_handle}&background=1d9bf0&color=fff&size=80`}
           className="w-full h-full rounded-full object-cover" alt={space.host_handle} />
@@ -312,7 +333,7 @@ function SpaceDetail({ id }: { id: string }) {
         </span>
         {space.is_ticketed && (
           <span className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 text-amber-600 px-2 py-0.5 rounded-full text-xs font-medium">
-            <Ticket size={10} />â‚¹{space.ticket_price_paise / 100}
+            <Ticket size={10} />₹{space.ticket_price_paise / 100}
           </span>
         )}
       </div>
@@ -332,12 +353,12 @@ function SpaceDetail({ id }: { id: string }) {
         isTicketError ? (
           <button onClick={handleBuyTicket} disabled={buyingTicket}
             className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 rounded-full transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-            <Ticket size={16} /> {buyingTicket ? 'Processingâ€¦' : `Buy ticket â€” â‚¹${space.ticket_price_paise / 100}`}
+            <Ticket size={16} /> {buyingTicket ? 'Processing…' : `Buy ticket — ₹${space.ticket_price_paise / 100}`}
           </button>
         ) : (
           <button onClick={() => joinMutation.mutate()} disabled={joinMutation.isPending}
             className="w-full bg-brand hover:bg-brand-dark text-white font-semibold py-3 rounded-full transition-colors disabled:opacity-50">
-            {joinMutation.isPending ? 'Joiningâ€¦' : 'Join Space'}
+            {joinMutation.isPending ? 'Joining…' : 'Join Space'}
           </button>
         )
       ) : (
@@ -347,12 +368,13 @@ function SpaceDetail({ id }: { id: string }) {
   );
 }
 
-// â”€â”€â”€ Main Spaces page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Main Spaces page ─────────────────────────────────────────────────────────
 export default function Spaces() {
   const { id }      = useParams<{ id?: string }>();
   const { user }    = useAuthStore();
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
+  const [activeTab, setActiveTab]   = useState<'live' | 'recordings'>('live');
   const [form, setForm] = useState({
     title: '', description: '', category: 'general',
     is_ticketed: false, ticket_price_inr: 50, is_recorded: false,
@@ -367,6 +389,13 @@ export default function Spaces() {
     refetchInterval: 15000,
     enabled:         !id,
   });
+
+  const { data: recordingsData, isLoading: recordingsLoading } = useQuery({
+    queryKey: ['space-recordings'],
+    queryFn:  () => spacesService.getRecordings(),
+    enabled:  activeTab === 'recordings' && !id,
+  });
+  const recordings = recordingsData?.data?.data || [];
 
   const [createError, setCreateError] = useState('');
 
@@ -417,6 +446,14 @@ export default function Spaces() {
             </button>
           )}
         </div>
+        <div className="flex gap-4 mt-3">
+          {(['live', 'recordings'] as const).map(t => (
+            <button key={t} onClick={() => setActiveTab(t)}
+              className={`text-sm font-medium pb-1 border-b-2 capitalize transition-colors ${activeTab === t ? 'border-brand text-gray-900 dark:text-white' : 'border-transparent text-gray-500'}`}>
+              {t === 'live' ? 'Live & Upcoming' : 'Recordings'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {showCreate && (
@@ -454,7 +491,7 @@ export default function Spaces() {
             </label>
             {form.is_ticketed && (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">â‚¹</span>
+                <span className="text-sm text-gray-500">₹</span>
                 <input type="number" min={10} value={form.ticket_price_inr}
                   onChange={e => setForm(f => ({ ...f, ticket_price_inr: Number(e.target.value) }))}
                   className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-black text-gray-900 dark:text-white outline-none focus:border-brand" />
@@ -472,16 +509,16 @@ export default function Spaces() {
             <button onClick={() => createMutation.mutate(form)}
               disabled={!form.title.trim() || createMutation.isPending}
               className="bg-brand text-white px-5 py-2 rounded-full text-sm font-medium disabled:opacity-50 hover:bg-brand-dark transition-colors">
-              {createMutation.isPending ? 'Startingâ€¦' : 'ðŸŽ™ï¸ Go Live'}
+              {createMutation.isPending ? 'Starting…' : '🎙️ Go Live'}
             </button>
             <button onClick={() => setShowCreate(false)} className="px-4 py-2 rounded-full text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Cancel</button>
           </div>
         </div>
       )}
 
-      {isLoading && <div className="flex justify-center py-12"><Loader2 size={24} className="animate-spin text-brand" /></div>}
+      {isLoading && activeTab === 'live' && <div className="flex justify-center py-12"><Loader2 size={24} className="animate-spin text-brand" /></div>}
 
-      {spaces.length === 0 && !isLoading && (
+      {activeTab === 'live' && spaces.length === 0 && !isLoading && (
         <div className="text-center py-16 text-gray-400">
           <Radio size={32} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium mb-1">No live Spaces right now</p>
@@ -489,7 +526,7 @@ export default function Spaces() {
         </div>
       )}
 
-      {spaces.map((space: any) => (
+      {activeTab === 'live' && spaces.map((space: any) => (
         <Link key={space.id} to={`/spaces/${space.id}`}
           className="block px-4 py-4 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-colors">
           <div className="flex items-start gap-3">
@@ -503,11 +540,11 @@ export default function Spaces() {
                 <span className="text-xs text-gray-400 capitalize">{space.category}</span>
                 {space.is_ticketed && (
                   <span className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/20 text-amber-600 px-2 py-0.5 rounded-full text-xs font-medium">
-                    <Ticket size={10} />â‚¹{space.ticket_price_paise / 100}
+                    <Ticket size={10} />₹{space.ticket_price_paise / 100}
                   </span>
                 )}
                 {space.is_recorded && (
-                  <span className="text-xs text-gray-400" title="This Space will be recorded">â—REC</span>
+                  <span className="text-xs text-gray-400" title="This Space will be recorded">●REC</span>
                 )}
               </div>
               <p className="font-semibold text-sm text-gray-900 dark:text-white leading-snug mb-0.5">{space.title}</p>
@@ -521,6 +558,46 @@ export default function Spaces() {
           </div>
         </Link>
       ))}
+
+      {/* Recordings tab */}
+      {activeTab === 'recordings' && (
+        <div className="px-4 py-4">
+          {recordingsLoading && <div className="flex justify-center py-12"><Loader2 size={24} className="animate-spin text-brand" /></div>}
+          {!recordingsLoading && recordings.length === 0 && (
+            <div className="text-center py-16 text-gray-400">
+              <span className="text-4xl mb-3 block">🎙️</span>
+              <p className="font-medium mb-1">No recordings yet</p>
+              <p className="text-sm">Start a Space with recording enabled to save it here.</p>
+            </div>
+          )}
+          <div className="space-y-4">
+            {recordings.map((rec: any) => (
+              <div key={rec.id} className="border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden">
+                {/* Video player */}
+                <video
+                  src={rec.recording_url}
+                  controls
+                  preload="metadata"
+                  className="w-full max-h-64 bg-black"
+                />
+                <div className="p-3">
+                  <p className="font-semibold text-sm text-gray-900 dark:text-white mb-1">{rec.title}</p>
+                  <div className="flex items-center gap-2">
+                    <img src={rec.host_avatar || `https://ui-avatars.com/api/?name=${rec.host_handle}&background=1d9bf0&color=fff&size=24`}
+                      className="w-5 h-5 rounded-full" alt={rec.host_handle} />
+                    <span className="text-xs text-gray-500">@{rec.host_handle}</span>
+                    <span className="text-xs text-gray-400">·</span>
+                    <span className="text-xs text-gray-400">{formatDistanceToNowStrict(new Date(rec.ended_at), { addSuffix: true })}</span>
+                    {rec.listener_count > 0 && (
+                      <span className="text-xs text-gray-400">· {rec.listener_count} listeners</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

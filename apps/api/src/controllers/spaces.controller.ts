@@ -339,3 +339,80 @@ export const createTicketOrder = async (req: Request, res: Response): Promise<vo
     R.serverError(res, 'Could not create ticket order');
   }
 };
+
+// ─── Start recording a space (host only) ──────────────────────────────────────
+export const startRecording = async (req: Request, res: Response): Promise<void> => {
+  const { id: userId } = (req as any).user;
+  const { id }         = req.params;
+
+  const { rows } = await db.query('SELECT * FROM spaces WHERE id = $1', [id]);
+  if (!rows[0])                        { R.notFound(res, 'Space not found'); return; }
+  if (rows[0].host_id !== userId)      { R.forbidden(res, 'Only the host can start recording'); return; }
+  if (rows[0].status !== 'live')       { R.badRequest(res, 'Space must be live to record'); return; }
+  if (rows[0].egress_id)               { R.badRequest(res, 'Recording already in progress'); return; }
+
+  // Check R2 is configured
+  if (!process.env.R2_ACCESS_KEY || !process.env.R2_BUCKET) {
+    R.serverError(res, 'Recording storage not configured'); return;
+  }
+
+  try {
+    const { startRoomRecording } = await import('../services/egress.service');
+    const egressId = await startRoomRecording(rows[0].room_name, id);
+
+    await db.query(
+      `UPDATE spaces SET egress_id = $1, is_recorded = TRUE WHERE id = $2`,
+      [egressId, id]
+    );
+
+    R.ok(res, { recording: true, egress_id: egressId });
+  } catch (err: any) {
+    console.error('[Spaces] Start recording failed:', err.message);
+    R.serverError(res, 'Could not start recording: ' + err.message);
+  }
+};
+
+// ─── Stop recording ────────────────────────────────────────────────────────────
+export const stopRecording = async (req: Request, res: Response): Promise<void> => {
+  const { id: userId } = (req as any).user;
+  const { id }         = req.params;
+
+  const { rows } = await db.query('SELECT * FROM spaces WHERE id = $1', [id]);
+  if (!rows[0])                   { R.notFound(res, 'Space not found'); return; }
+  if (rows[0].host_id !== userId) { R.forbidden(res, 'Only the host can stop recording'); return; }
+  if (!rows[0].egress_id)         { R.badRequest(res, 'No active recording'); return; }
+
+  try {
+    const { stopRecording: stopEgress } = await import('../services/egress.service');
+    await stopEgress(rows[0].egress_id);
+
+    // Build the recording URL — LiveKit names it spaces/{spaceId}/{timestamp}.mp4
+    const recordingFilename = `spaces/${id}`;
+    const recordingUrl      = `${process.env.R2_PUBLIC_URL}/${recordingFilename}`;
+
+    await db.query(
+      `UPDATE spaces SET egress_id = NULL, recording_url = $1, recording_filename = $2 WHERE id = $3`,
+      [recordingUrl, recordingFilename, id]
+    );
+
+    R.ok(res, { recording: false, recording_url: recordingUrl });
+  } catch (err: any) {
+    console.error('[Spaces] Stop recording failed:', err.message);
+    R.serverError(res, 'Could not stop recording: ' + err.message);
+  }
+};
+
+// ─── Get all recordings ────────────────────────────────────────────────────────
+export const getRecordings = async (req: Request, res: Response): Promise<void> => {
+  const { rows } = await db.query(
+    `SELECT s.id, s.title, s.category, s.recording_url, s.started_at, s.ended_at,
+            s.listener_count, s.recording_duration,
+            u.handle AS host_handle, u.display_name AS host_name, u.avatar_url AS host_avatar
+     FROM spaces s JOIN users u ON u.id = s.host_id
+     WHERE s.is_recorded = TRUE AND s.recording_url IS NOT NULL AND s.status = 'ended'
+     ORDER BY s.ended_at DESC
+     LIMIT 50`,
+    []
+  );
+  R.ok(res, rows);
+};
