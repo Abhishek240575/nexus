@@ -1,4 +1,4 @@
-import { EgressClient, EncodedFileOutput, S3Upload } from 'livekit-server-sdk';
+import { EgressClient, EncodedFileOutput, EncodedFileType, S3Upload } from 'livekit-server-sdk';
 
 const egressClient = new EgressClient(
   process.env.LIVEKIT_URL!.replace('wss://', 'https://'),
@@ -6,30 +6,32 @@ const egressClient = new EgressClient(
   process.env.LIVEKIT_API_SECRET!
 );
 
-const s3Upload = (): S3Upload => ({
-  accessKey:  process.env.R2_ACCESS_KEY!,
-  secret:     process.env.R2_SECRET_KEY!,
-  bucket:     process.env.R2_BUCKET!,
-  endpoint:   process.env.R2_ENDPOINT!,
-  region:     'auto',
-  forcePathStyle: true,
-});
+const buildS3Upload = (): S3Upload => {
+  const upload = new S3Upload();
+  upload.accessKey    = process.env.R2_ACCESS_KEY!;
+  upload.secret       = process.env.R2_SECRET_KEY!;
+  upload.bucket       = process.env.R2_BUCKET!;
+  upload.endpoint     = process.env.R2_ENDPOINT!;
+  upload.region       = 'auto';
+  upload.forcePathStyle = true;
+  return upload;
+};
 
 export const startRoomRecording = async (
   roomName: string,
   spaceId:  string
 ): Promise<string> => {
-  const filepath = `spaces/${spaceId}/{time}.mp4`;
-
-  const fileOutput = new EncodedFileOutput({
-    filepath,
-    output: { case: 's3', value: s3Upload() },
+  const output = new EncodedFileOutput({
+    fileType: EncodedFileType.MP4,
+    filepath: `spaces/${spaceId}/{time}.mp4`,
+    output:   { case: 's3', value: buildS3Upload() },
   });
 
-  const info = await egressClient.startRoomCompositeEgress(roomName, {
-    layout: 'speaker',
-    encodedFile: fileOutput,
-  });
+  const info = await egressClient.startRoomCompositeEgress(
+    roomName,
+    output,
+    'speaker'
+  );
 
   return info.egressId;
 };
