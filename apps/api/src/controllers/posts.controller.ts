@@ -4,6 +4,7 @@ import { redis } from '../config/redis';
 import * as R    from '../utils/response';
 import { AuthenticatedRequest } from '../types';
 import { moderateContent, detectLanguage } from '../services/moderation.service';
+import { preFilterContent }               from '../services/profanity.filter';
 
 const extractHashtags = (content: string): string[] => {
   const matches = content.match(/#([a-zA-Z0-9_]+)/g) || [];
@@ -66,6 +67,15 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
   if (quote_of_id) {
     const { rows } = await db.query('SELECT id FROM posts WHERE id = $1', [quote_of_id]);
     if (!rows[0]) { R.notFound(res, 'Post you are quoting not found'); return; }
+  }
+
+  // ─── Fast profanity pre-filter (runs before DB write) ─────────────────────
+  if (content) {
+    const preFilter = preFilterContent(content);
+    if (preFilter.blocked) {
+      R.badRequest(res, preFilter.reason || 'Post violates community guidelines.');
+      return;
+    }
   }
 
   const { rows } = await db.query(
