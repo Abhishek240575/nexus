@@ -45,6 +45,13 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   // Store email verification token in Redis (24h TTL)
   await redis.setex(`verify:${verifyToken}`, 86400, user.id);
 
+  // Record consent at registration
+  await db.query(
+    `INSERT INTO user_consents (user_id, consent_type, granted, ip_address, version)
+     VALUES ($1, 'terms', TRUE, $2, '1.0'), ($1, 'privacy', TRUE, $2, '1.0')`,
+    [user.id, req.ip]
+  ).catch(() => {}); // non-blocking
+
   // Send verification email — non-blocking, don't fail registration if email fails
   sendVerificationEmail(email, handle, verifyToken).catch(err => {
     console.error('[Email] Failed to send verification email:', err?.message);

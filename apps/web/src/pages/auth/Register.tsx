@@ -11,6 +11,7 @@ const schema = z.object({
   email:        z.string().email('Invalid email'),
   display_name: z.string().min(1, 'Display name required').max(100),
   password:     z.string().min(8, 'At least 8 characters'),
+  consent:      z.literal(true, { errorMap: () => ({ message: 'You must agree to the Terms and Privacy Policy' }) }),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -100,6 +101,20 @@ export default function Register() {
           <Link to="/terms" className="text-brand hover:underline">Terms</Link> and{' '}
           <Link to="/privacy" className="text-brand hover:underline">Privacy Policy</Link>
         </p>
+
+        {/* Explicit consent checkbox (GDPR/DPDP requirement) */}
+        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
+          <input type="checkbox" id="consent" {...register('consent')}
+            className="mt-0.5 w-4 h-4 text-brand border-gray-300 rounded focus:ring-brand" />
+          <label htmlFor="consent" className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+            I have read and agree to Deemona's{' '}
+            <Link to="/terms" className="text-brand hover:underline" target="_blank">Terms of Service</Link> and{' '}
+            <Link to="/privacy" className="text-brand hover:underline" target="_blank">Privacy Policy</Link>.
+            I consent to the collection and processing of my personal data as described therein.
+            I understand I can withdraw consent at any time from Settings.
+          </label>
+        </div>
+        {errors.consent && <p className="text-red-500 text-xs">{errors.consent.message}</p>}
       </form>
 
       <p className="mt-6 text-center text-sm text-gray-500">

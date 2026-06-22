@@ -44,6 +44,7 @@ export default function Sidebar() {
     { to: '/analytics',     icon: BarChart2, label: 'Analytics'     },
     { to: `/${user?.handle}`, icon: User,    label: 'Profile'       },
     { to: '/settings',      icon: Settings,  label: 'Settings'      },
+    { to: '/privacy-center',icon: Shield,    label: 'Privacy'       },
   ];
 
   const handleLogout = async () => {
