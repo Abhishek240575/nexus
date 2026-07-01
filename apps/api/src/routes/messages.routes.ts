@@ -1,19 +1,16 @@
 import { Router } from 'express';
-import { body }   from 'express-validator';
-import * as ctrl  from '../controllers/messages.controller';
+import { body } from 'express-validator';
 import { protect } from '../middlewares/auth.middleware';
 import { validate } from '../middlewares/validate.middleware';
-
+import * as ctrl from '../controllers/messages.controller';
 const router = Router();
-
-router.get('/',                                    protect, ctrl.getConversations);
-router.post('/with/:userId',                       protect, ctrl.getOrCreateConversation);
-router.get('/:conversationId',                     protect, ctrl.getMessages);
-router.post('/:conversationId',
-  protect,
-  [body('content').optional().isString().isLength({ max: 10000 })],
-  validate,
-  ctrl.sendMessage
-);
-
+router.get('/conversations',                       protect, ctrl.getConversations);
+router.post('/conversations',                      protect, [body('handle').isString()], validate, ctrl.startConversation);
+router.get('/conversations/:conversationId',       protect, ctrl.getMessages);
+router.post('/conversations/:conversationId',      protect, ctrl.sendMessage);
+router.delete('/messages/:messageId',              protect, ctrl.deleteMessage);
+router.post('/messages/:messageId/react',          protect, [body('emoji').isString()], validate, ctrl.addReaction);
+router.post('/keys/register',                      protect, [body('public_key').isString()], validate, ctrl.registerPublicKey);
+router.get('/keys/:handle',                        protect, ctrl.getPublicKey);
+router.post('/voice-upload-url',                   protect, ctrl.getVoiceUploadUrl);
 export default router;

@@ -1,0 +1,13 @@
+import { Router } from 'express';
+import { body } from 'express-validator';
+import { protect, optionalAuth } from '../middlewares/auth.middleware';
+import { validate } from '../middlewares/validate.middleware';
+import * as ctrl from '../controllers/organizations.controller';
+const router = Router();
+router.get('/search',          optionalAuth, ctrl.searchOrgs);
+router.post('/', protect, [body('handle').isString(), body('name').isString()], validate, ctrl.createOrg);
+router.get('/:handle',         optionalAuth, ctrl.getOrg);
+router.patch('/:handle',       protect, ctrl.updateOrg);
+router.post('/:handle/follow', protect, ctrl.followOrg);
+router.get('/:handle/feed',    optionalAuth, ctrl.getOrgFeed);
+export default router;

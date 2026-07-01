@@ -1,0 +1,12 @@
+import { Router } from 'express';
+import { body } from 'express-validator';
+import { protect, optionalAuth } from '../middlewares/auth.middleware';
+import { validate } from '../middlewares/validate.middleware';
+import * as ctrl from '../controllers/stories.controller';
+const router = Router();
+router.get('/',                     optionalAuth, ctrl.getStories);
+router.post('/', protect, [body('media_url').isURL()], validate, ctrl.createStory);
+router.post('/:storyId/view',       protect, ctrl.viewStory);
+router.get('/:storyId/viewers',     protect, ctrl.getStoryViewers);
+router.delete('/:storyId',          protect, ctrl.deleteStory);
+export default router;

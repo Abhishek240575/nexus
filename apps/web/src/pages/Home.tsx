@@ -1,3 +1,4 @@
+import StoriesBar from '@/components/stories/StoriesBar';
 import { useState }    from 'react';
 import PostComposer    from '@/components/post/PostComposer';
 import Feed            from '@/components/feed/Feed';
@@ -22,6 +23,7 @@ export default function Home() {
         </div>
       </div>
       <PostComposer placeholder="What's happening?" />
+      <StoriesBar />
       <Feed type={tab === 'for-you' ? 'explore' : 'home'} />
     </div>
   );
