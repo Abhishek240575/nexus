@@ -9,7 +9,7 @@ import { initPushNotifications } from '@/services/notifications.service';
 import AppLayout   from '@/components/layout/AppLayout';
 import AuthLayout  from '@/components/layout/AuthLayout';
 
-// Pages â€” lazy loaded
+// Pages Ã¢â‚¬â€ lazy loaded
 import { lazy, Suspense } from 'react';
 const Home          = lazy(() => import('@/pages/Home'));
 const Explore       = lazy(() => import('@/pages/Explore'));
@@ -44,7 +44,6 @@ const Login         = lazy(() => import('@/pages/auth/Login'));
 const Register      = lazy(() => import('@/pages/auth/Register'));
 const ForgotPassword = lazy(() => import('@/pages/auth/ForgotPassword'));
 const ResetPassword  = lazy(() => import('@/pages/auth/ResetPassword'));
-const OAuthCallback  = lazy(() => import('@/pages/auth/OAuthCallback'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -85,9 +84,7 @@ export default function App() {
               <Route path="/login"           element={<GuestRoute><Login /></GuestRoute>} />
               <Route path="/register"        element={<GuestRoute><Register /></GuestRoute>} />
               <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} />
-              <Route path="/reset-password"  element={<GuestRoute><ResetPassword /></GuestRoute>} />
-              <Route path="/auth/callback"   element={<OAuthCallback />} />
-            </Route>
+              <Route path="/reset-password"  element={<GuestRoute><ResetPassword /></GuestRoute>} />            </Route>
 
             {/* App routes */}
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
@@ -127,7 +124,7 @@ export default function App() {
 
             <Route path="*" element={<Navigate to="/" replace />} />
 
-            {/* Standalone â€” no layout */}
+            {/* Standalone Ã¢â‚¬â€ no layout */}
             <Route path="/oauth-callback" element={<OAuthCallback />} />
             <Route path="/onboarding" element={<Onboarding />} />
           </Routes>
