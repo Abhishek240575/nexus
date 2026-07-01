@@ -4,6 +4,7 @@ import { useAuthStore }   from '@/stores/auth.store';
 import { postsService }   from '@/services/posts.service';
 import { useQueryClient } from '@tanstack/react-query';
 import EmojiPicker        from 'emoji-picker-react';
+import AIWritingAssistant from '@/components/post/AIWritingAssistant';
 import { mediaService }   from '@/services/media.service';
 
 interface PostComposerProps {
@@ -245,6 +246,8 @@ export default function PostComposer({ replyToId, onPosted, placeholder = "What'
               }} width="100%" height={300} />
             </div>
           )}
+          {/* AI Writing Assistant */}
+          <AIWritingAssistant text={content} lang={postLang === 'auto' ? undefined : postLang} onApply={(text) => { setContent(text); autoResize(); }} />
 
           {/* Language dropdown */}
           {showLangMenu && (
@@ -277,13 +280,13 @@ export default function PostComposer({ replyToId, onPosted, placeholder = "What'
               {canUploadVideo ? (
                 <button onClick={() => videoInputRef.current?.click()}
                   disabled={!!videoFile || mediaFiles.length > 0 || showPoll}
-                  title="Add short video (max 30s) — Plus+"
+                  title="Add short video (max 30s) Ã¢â‚¬â€ Plus+"
                   className={`p-2 rounded-full transition-colors ${videoFile ? 'text-brand bg-blue-50 dark:bg-blue-900/20' : 'text-brand hover:bg-blue-50 dark:hover:bg-blue-900/20'} disabled:opacity-40 disabled:cursor-not-allowed`}>
                   <Video size={18} />
                 </button>
               ) : (
                 <button onClick={() => window.location.href = '/premium'}
-                  title="Short video requires Plus or higher — tap to upgrade"
+                  title="Short video requires Plus or higher Ã¢â‚¬â€ tap to upgrade"
                   className="p-2 rounded-full text-gray-300 dark:text-gray-600 hover:text-amber-500 transition-colors">
                   <Video size={18} />
                 </button>

@@ -1,3 +1,4 @@
+import { getPersonalizedFeed } from '../services/feed.service';
 import { Request, Response } from 'express';
 import { db }    from '../config/db';
 import { redis } from '../config/redis';
@@ -44,7 +45,7 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
     R.badRequest(res, 'Post must have content or media'); return;
   }
 
-  // ─── Tier-based character limit ──────────────────────────────────────────
+  // â”€â”€â”€ Tier-based character limit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { rows: tierRow } = await db.query(
     `SELECT u.premium_tier, t.max_post_length, t.features
      FROM users u LEFT JOIN subscription_tiers t ON t.id = u.premium_tier
@@ -69,7 +70,7 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
     if (!rows[0]) { R.notFound(res, 'Post you are quoting not found'); return; }
   }
 
-  // ─── Fast profanity pre-filter (runs before DB write) ─────────────────────
+  // â”€â”€â”€ Fast profanity pre-filter (runs before DB write) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (content) {
     const preFilter = preFilterContent(content);
     if (preFilter.blocked) {
@@ -87,7 +88,7 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
 
   const post = rows[0];
 
-  // ─── AI Content Moderation ────────────────────────────────────────────────
+  // â”€â”€â”€ AI Content Moderation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (content && process.env.ANTHROPIC_API_KEY) {
     try {
       const language   = await detectLanguage(content);
@@ -101,7 +102,7 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
       }
 
       if (modResult.decision === 'FLAG') {
-        // Hold for human review — unpublish
+        // Hold for human review â€” unpublish
         await db.query('UPDATE posts SET is_published = FALSE WHERE id = $1', [post.id]);
         // Add to moderation queue
         await db.query(

@@ -8,7 +8,7 @@ import passport       from './config/passport';
 import { globalLimiter } from './middlewares/rateLimiter.middleware';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware';
 
-// ─── Route imports ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Route imports â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 import authRoutes          from './routes/auth.routes';
 import postsRoutes         from './routes/posts.routes';
 import usersRoutes         from './routes/users.routes';
@@ -19,6 +19,9 @@ import analyticsRoutes     from './routes/analytics.routes';
 import moderationRoutes    from './routes/moderation.routes';
 import debatesRoutes       from './routes/debates.routes';
 import spacesRoutes        from './routes/spaces.routes';
+import aiRoutes       from './routes/ai.routes';
+import oauthRoutes    from './routes/oauth.routes';
+import meRoutes       from './routes/me.routes';
 import mediaRoutes         from './routes/media.routes';
 import privacyRoutes       from './routes/privacy.routes';
 import narrativeRoutes     from './routes/narrative.routes';
@@ -32,7 +35,7 @@ import complianceRoutes    from './routes/compliance.routes';
 const app = express();
 app.set('trust proxy', 1); // Trust first proxy (Render's load balancer)
 
-// ─── Security & parsing ───────────────────────────────────────────────────────
+// â”€â”€â”€ Security & parsing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.use(helmet());
 app.use(cors({
   origin:      process.env.CLIENT_URL || 'http://localhost:5173',
@@ -48,16 +51,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-// ─── Auth ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.use(passport.initialize());
 
-// ─── Rate limit ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Rate limit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.use('/api', globalLimiter);
 
-// ─── Health check ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'nexus-api' }));
 
-// ─── Routes ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.use('/api/auth',          authRoutes);
 app.use('/api/posts',         postsRoutes);
 app.use('/api/users',         usersRoutes);
@@ -68,6 +71,9 @@ app.use('/api/analytics',     analyticsRoutes);
 app.use('/api/moderation',    moderationRoutes);
 app.use('/api/debates',       debatesRoutes);
 app.use('/api/spaces',        spacesRoutes);
+app.use('/api/ai',         aiRoutes);
+app.use('/api/auth',       oauthRoutes);
+app.use('/api/users/me',   meRoutes);
 app.use('/api/media',         mediaRoutes);
 app.use('/api/privacy',       privacyRoutes);
 app.use('/api/narrative',     narrativeRoutes);
@@ -78,7 +84,7 @@ app.use('/api/billing',           billingRoutes);
 app.use('/api/monetization',      monetizationRoutes);
 app.use('/api/compliance',        complianceRoutes);
 
-// ─── Error handling ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Error handling â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.use(notFoundHandler);
 app.use(errorHandler);
 

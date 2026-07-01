@@ -1,38 +1,54 @@
-import { useEffect }      from 'react';
-import { useNavigate }    from 'react-router-dom';
-import { useAuthStore }   from '@/stores/auth.store';
-import { authService }    from '@/services/auth.service';
-import { connectSocket }  from '@/services/socket';
+import { useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuthStore } from '@/stores/auth.store';
+import { api } from '@/services/api.client';
+import { Loader2 } from 'lucide-react';
 
 export default function OAuthCallback() {
-  const navigate    = useNavigate();
+  const navigate   = useNavigate();
+  const [params]   = useSearchParams();
   const { setAuth } = useAuthStore();
 
   useEffect(() => {
-    const params       = new URLSearchParams(window.location.search);
     const accessToken  = params.get('access_token');
     const refreshToken = params.get('refresh_token');
+    const redirect     = params.get('redirect') || '/';
 
     if (!accessToken || !refreshToken) {
       navigate('/login?error=oauth_failed');
       return;
     }
 
-    // Temporarily set tokens so getMe call works
-    useAuthStore.getState().setTokens(accessToken, refreshToken);
+    // Store tokens and fetch user profile
+    const init = async () => {
+      try {
+        // Temporarily set tokens in localStorage so api client can use them
+        localStorage.setItem('deemona-auth', JSON.stringify({
+          state: { accessToken, refreshToken, isAuth: true, user: null }
+        }));
 
-    authService.getMe()
-      .then(({ data }) => {
-        setAuth(data.data, accessToken, refreshToken);
-        connectSocket();
-        navigate('/');
-      })
-      .catch(() => navigate('/login?error=oauth_failed'));
+        // Fetch user profile
+        const res = await api.get('/api/users/me', {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+
+        const user = res.data.data;
+        setAuth(user, accessToken, refreshToken);
+        navigate(redirect, { replace: true });
+      } catch {
+        navigate('/login?error=oauth_failed');
+      }
+    };
+
+    init();
   }, []);
 
   return (
-    <div className="flex items-center justify-center h-screen">
-      <div className="w-8 h-8 border-2 border-brand border-t-transparent rounded-full animate-spin" />
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black">
+      <div className="text-center">
+        <Loader2 size={32} className="animate-spin text-brand mx-auto mb-4" />
+        <p className="text-gray-500 text-sm">Signing you in...</p>
+      </div>
     </div>
   );
 }

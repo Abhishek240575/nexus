@@ -9,7 +9,7 @@ import { initPushNotifications } from '@/services/notifications.service';
 import AppLayout   from '@/components/layout/AppLayout';
 import AuthLayout  from '@/components/layout/AuthLayout';
 
-// Pages — lazy loaded
+// Pages â€” lazy loaded
 import { lazy, Suspense } from 'react';
 const Home          = lazy(() => import('@/pages/Home'));
 const Explore       = lazy(() => import('@/pages/Explore'));
@@ -29,6 +29,7 @@ const Earnings           = lazy(() => import('@/pages/Earnings'));
 const Compliance         = lazy(() => import('@/pages/Compliance'));
 const Legal              = lazy(() => import('@/pages/Legal'));
 const TermsOfService     = lazy(() => import('@/pages/Legal').then(m => ({ default: m.TermsOfService })));
+const OAuthCallback      = lazy(() => import('@/pages/auth/OAuthCallback'));
 const Onboarding         = lazy(() => import('@/pages/Onboarding'));
 const Analytics          = lazy(() => import('@/pages/Analytics'));
 const PrivacyCenter      = lazy(() => import('@/pages/PrivacyCenter'));
@@ -126,7 +127,8 @@ export default function App() {
 
             <Route path="*" element={<Navigate to="/" replace />} />
 
-            {/* Standalone — no layout */}
+            {/* Standalone â€” no layout */}
+            <Route path="/oauth-callback" element={<OAuthCallback />} />
             <Route path="/onboarding" element={<Onboarding />} />
           </Routes>
         </Suspense>
