@@ -1,5 +1,5 @@
 import { Router }   from 'express';
-import passport     from 'passport';
+import passport from '../config/passport';
 import { signAccessToken, signRefreshToken, storeRefreshToken } from '../utils/jwt';
 
 const router  = Router();
