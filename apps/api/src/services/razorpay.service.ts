@@ -1,7 +1,7 @@
 import Razorpay from 'razorpay';
 import crypto   from 'crypto';
 
-// Use placeholder if env vars not set — prevents startup crash
+// Use placeholder if env vars not set Ã¢â‚¬â€ prevents startup crash
 const razorpay = new Razorpay({
   key_id:     process.env.RAZORPAY_KEY_ID     || 'rzp_test_placeholder',
   key_secret: process.env.RAZORPAY_KEY_SECRET || 'placeholder_secret_key',
@@ -22,7 +22,7 @@ export const createOrder = async (amountPaise: number, receipt: string, notes?: 
   });
 };
 
-export const createSubscription = async (planId: string, totalCount: number = 12) => {
+export const createSubscription = async (planId: string, customerId?: string, totalCount: number = 12) => {
   return (razorpay.subscriptions as any).create({
     plan_id:     planId,
     total_count: totalCount,
@@ -30,7 +30,7 @@ export const createSubscription = async (planId: string, totalCount: number = 12
   });
 };
 
-export const cancelSubscription = async (subscriptionId: string) => {
+export const cancelSubscription = async (subscriptionId: string, cancelAtPeriodEnd?: boolean) => {
   return (razorpay.subscriptions as any).cancel(subscriptionId);
 };
 
@@ -50,7 +50,7 @@ export const verifySubscriptionSignature = (subscriptionId: string, paymentId: s
 
 export default razorpay;
 
-export const createCustomer = async (name: string, email: string) => {
+export const createCustomer = async (name: string, email: string, _extra?: any) => {
   return (razorpay.customers as any).create({ name, email });
 };
 
