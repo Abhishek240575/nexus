@@ -2,11 +2,11 @@ import Razorpay from 'razorpay';
 import crypto    from 'crypto';
 
 const razorpay = new Razorpay({
-  key_id:     process.env.RAZORPAY_KEY_ID     || '',
-  key_secret: process.env.RAZORPAY_KEY_SECRET || '',
+  key_id:     process.env.RAZORPAY_KEY_ID     || 'rzp_test_placeholder',
+  key_secret: process.env.RAZORPAY_KEY_SECRET || 'placeholder_secret',
 });
 
-// ─── Tier → Razorpay Plan ID mapping ──────────────────────────────────────────
+// â”€â”€â”€ Tier â†’ Razorpay Plan ID mapping â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // These plan IDs must be created once in the Razorpay dashboard (Subscriptions > Plans)
 // and stored in env vars. Each plan is a recurring monthly charge in INR.
 export const TIER_PLAN_IDS: Record<string, string | undefined> = {
@@ -20,7 +20,7 @@ export interface CreateSubscriptionResult {
   shortUrl:                string | null;
 }
 
-// ─── Create a Razorpay customer (idempotent-ish: caller should store the id) ─
+// â”€â”€â”€ Create a Razorpay customer (idempotent-ish: caller should store the id) â”€
 export const createCustomer = async (
   name: string, email: string, contact?: string
 ): Promise<string> => {
@@ -33,7 +33,7 @@ export const createCustomer = async (
   return customer.id;
 };
 
-// ─── Create a recurring subscription for a tier ──────────────────────────────
+// â”€â”€â”€ Create a recurring subscription for a tier â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const createSubscription = async (
   tierId: string, customerId: string, totalCycles = 120 // ~10 years of monthly cycles
 ): Promise<CreateSubscriptionResult> => {
@@ -57,7 +57,7 @@ export const cancelSubscription = async (razorpaySubscriptionId: string, cancelA
   return razorpay.subscriptions.cancel(razorpaySubscriptionId, cancelAtCycleEnd);
 };
 
-// ─── One-off order (for tips, space tickets, etc.) ────────────────────────────
+// â”€â”€â”€ One-off order (for tips, space tickets, etc.) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const createOrder = async (amountPaise: number, receipt: string, notes: Record<string, string> = {}) => {
   return razorpay.orders.create({
     amount:   amountPaise,
@@ -67,7 +67,7 @@ export const createOrder = async (amountPaise: number, receipt: string, notes: R
   });
 };
 
-// ─── Verify payment signature (for one-off order checkout) ───────────────────
+// â”€â”€â”€ Verify payment signature (for one-off order checkout) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const verifyPaymentSignature = (
   orderId: string, paymentId: string, signature: string
 ): boolean => {
@@ -78,7 +78,7 @@ export const verifyPaymentSignature = (
   return expected === signature;
 };
 
-// ─── Verify webhook signature (for subscription lifecycle events) ────────────
+// â”€â”€â”€ Verify webhook signature (for subscription lifecycle events) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const verifyWebhookSignature = (
   body: string, signature: string
 ): boolean => {
