@@ -1,91 +1,50 @@
 import Razorpay from 'razorpay';
-import crypto    from 'crypto';
+import crypto   from 'crypto';
 
+// Use placeholder if env vars not set — prevents startup crash
 const razorpay = new Razorpay({
   key_id:     process.env.RAZORPAY_KEY_ID     || 'rzp_test_placeholder',
-  key_secret: process.env.RAZORPAY_KEY_SECRET || 'placeholder_secret',
+  key_secret: process.env.RAZORPAY_KEY_SECRET || 'placeholder_secret_key',
 });
 
-// â”€â”€â”€ Tier â†’ Razorpay Plan ID mapping â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// These plan IDs must be created once in the Razorpay dashboard (Subscriptions > Plans)
-// and stored in env vars. Each plan is a recurring monthly charge in INR.
 export const TIER_PLAN_IDS: Record<string, string | undefined> = {
   plus:       process.env.RAZORPAY_PLAN_PLUS,
   pro:        process.env.RAZORPAY_PLAN_PRO,
   enterprise: process.env.RAZORPAY_PLAN_ENTERPRISE,
 };
 
-export interface CreateSubscriptionResult {
-  razorpaySubscriptionId: string;
-  shortUrl:                string | null;
-}
-
-// â”€â”€â”€ Create a Razorpay customer (idempotent-ish: caller should store the id) â”€
-export const createCustomer = async (
-  name: string, email: string, contact?: string
-): Promise<string> => {
-  const customer = await razorpay.customers.create({
-    name,
-    email,
-    contact: contact || undefined,
-    fail_existing: 0, // if customer with same email/contact exists, return existing
-  } as any);
-  return customer.id;
-};
-
-// â”€â”€â”€ Create a recurring subscription for a tier â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-export const createSubscription = async (
-  tierId: string, customerId: string, totalCycles = 120 // ~10 years of monthly cycles
-): Promise<CreateSubscriptionResult> => {
-  const planId = TIER_PLAN_IDS[tierId];
-  if (!planId) throw new Error(`No Razorpay plan configured for tier "${tierId}"`);
-
-  const sub = await razorpay.subscriptions.create({
-    plan_id:         planId,
-    customer_notify: 1,
-    total_count:     totalCycles,
-    notes:           { tier: tierId },
-  } as any);
-
-  return {
-    razorpaySubscriptionId: sub.id,
-    shortUrl:                (sub as any).short_url || null,
-  };
-};
-
-export const cancelSubscription = async (razorpaySubscriptionId: string, cancelAtCycleEnd = true) => {
-  return razorpay.subscriptions.cancel(razorpaySubscriptionId, cancelAtCycleEnd);
-};
-
-// â”€â”€â”€ One-off order (for tips, space tickets, etc.) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-export const createOrder = async (amountPaise: number, receipt: string, notes: Record<string, string> = {}) => {
+export const createOrder = async (amountPaise: number, receipt: string, notes?: any) => {
   return razorpay.orders.create({
     amount:   amountPaise,
     currency: 'INR',
-    receipt,
-    notes,
+    receipt:  receipt.slice(0, 40),
+    notes:    notes || {},
   });
 };
 
-// â”€â”€â”€ Verify payment signature (for one-off order checkout) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-export const verifyPaymentSignature = (
-  orderId: string, paymentId: string, signature: string
-): boolean => {
-  const expected = crypto
-    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || '')
-    .update(`${orderId}|${paymentId}`)
-    .digest('hex');
+export const createSubscription = async (planId: string, totalCount: number = 12) => {
+  return (razorpay.subscriptions as any).create({
+    plan_id:     planId,
+    total_count: totalCount,
+    quantity:    1,
+  });
+};
+
+export const cancelSubscription = async (subscriptionId: string) => {
+  return (razorpay.subscriptions as any).cancel(subscriptionId);
+};
+
+export const verifyPaymentSignature = (orderId: string, paymentId: string, signature: string): boolean => {
+  const body = `${orderId}|${paymentId}`;
+  const expected = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || 'placeholder_secret_key')
+    .update(body).digest('hex');
   return expected === signature;
 };
 
-// â”€â”€â”€ Verify webhook signature (for subscription lifecycle events) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-export const verifyWebhookSignature = (
-  body: string, signature: string
-): boolean => {
-  const expected = crypto
-    .createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET || '')
-    .update(body)
-    .digest('hex');
+export const verifySubscriptionSignature = (subscriptionId: string, paymentId: string, signature: string): boolean => {
+  const body = `${paymentId}|${subscriptionId}`;
+  const expected = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || 'placeholder_secret_key')
+    .update(body).digest('hex');
   return expected === signature;
 };
 
