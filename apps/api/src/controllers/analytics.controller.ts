@@ -5,7 +5,7 @@ import { AuthenticatedRequest } from '../types';
 
 async function getTierFeatures(userId: string) {
   const { rows } = await db.query(
-    `SELECT u.premium_tier, t.features FROM users u LEFT JOIN subscription_tiers t ON t.id = u.premium_tier WHERE u.id = $1`,
+    `SELECT u.premium_tier, t.features FROM users u LEFT JOIN subscription_tiers t ON t.id = u.premium_tier WHERE u.id = $1::uuid`,
     [userId]
   );
   return { tier: rows[0]?.premium_tier || 'free', features: rows[0]?.features || {} };

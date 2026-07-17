@@ -48,7 +48,7 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
   const { rows: tierRow } = await db.query(
     `SELECT u.premium_tier, t.max_post_length, t.features
      FROM users u LEFT JOIN subscription_tiers t ON t.id = u.premium_tier
-     WHERE u.id = $1`,
+     WHERE u.id = $1::uuid`,
     [userId]
   );
   const maxLength     = tierRow[0]?.max_post_length || 280;
@@ -241,7 +241,7 @@ export const getHomeFeed = async (req: Request, res: Response): Promise<void> =>
             EXISTS(SELECT 1 FROM reposts   WHERE user_id = $1::uuid AND post_id = p.id) AS is_reposted,
             EXISTS(SELECT 1 FROM bookmarks WHERE user_id = $1::uuid AND post_id = p.id) AS is_bookmarked
      FROM posts p JOIN users u ON u.id = p.user_id
-     WHERE (p.user_id = $1 OR p.user_id IN (SELECT following_id FROM follows WHERE follower_id = $1))
+     WHERE (p.user_id = $1::uuid OR p.user_id IN (SELECT following_id FROM follows WHERE follower_id = $1::uuid))
        AND p.is_published = TRUE AND p.reply_to_id IS NULL AND u.suspended = FALSE
        AND ($3::timestamptz IS NULL OR p.created_at < $3::timestamptz)
      ORDER BY p.created_at DESC
@@ -290,12 +290,12 @@ export const likePost = async (req: Request, res: Response): Promise<void> => {
   const { id: postId } = req.params;
 
   const existing = await db.query(
-    'SELECT id FROM likes WHERE user_id = $1 AND post_id = $2',
+    'SELECT id FROM likes WHERE user_id = $1::uuid AND post_id = $2',
     [userId, postId]
   );
 
   if (existing.rows[0]) {
-    await db.query('DELETE FROM likes WHERE user_id = $1 AND post_id = $2', [userId, postId]);
+    await db.query('DELETE FROM likes WHERE user_id = $1::uuid AND post_id = $2', [userId, postId]);
     const { rows } = await db.query('SELECT likes_count FROM posts WHERE id = $1', [postId]);
     R.ok(res, { liked: false, likes_count: rows[0]?.likes_count ?? 0 });
   } else {
@@ -316,12 +316,12 @@ export const repostPost = async (req: Request, res: Response): Promise<void> => 
   const { id: postId } = req.params;
 
   const existing = await db.query(
-    'SELECT id FROM reposts WHERE user_id = $1 AND post_id = $2',
+    'SELECT id FROM reposts WHERE user_id = $1::uuid AND post_id = $2',
     [userId, postId]
   );
 
   if (existing.rows[0]) {
-    await db.query('DELETE FROM reposts WHERE user_id = $1 AND post_id = $2', [userId, postId]);
+    await db.query('DELETE FROM reposts WHERE user_id = $1::uuid AND post_id = $2', [userId, postId]);
     const { rows } = await db.query('SELECT reposts_count FROM posts WHERE id = $1', [postId]);
     R.ok(res, { reposted: false, reposts_count: rows[0]?.reposts_count ?? 0 });
   } else {
@@ -342,12 +342,12 @@ export const bookmarkPost = async (req: Request, res: Response): Promise<void> =
   const { id: postId } = req.params;
 
   const existing = await db.query(
-    'SELECT id FROM bookmarks WHERE user_id = $1 AND post_id = $2',
+    'SELECT id FROM bookmarks WHERE user_id = $1::uuid AND post_id = $2',
     [userId, postId]
   );
 
   if (existing.rows[0]) {
-    await db.query('DELETE FROM bookmarks WHERE user_id = $1 AND post_id = $2', [userId, postId]);
+    await db.query('DELETE FROM bookmarks WHERE user_id = $1::uuid AND post_id = $2', [userId, postId]);
     R.ok(res, { bookmarked: false });
   } else {
     await db.query(
@@ -376,7 +376,7 @@ export const getBookmarks = async (req: Request, res: Response): Promise<void> =
      FROM bookmarks b
      JOIN posts p ON p.id = b.post_id
      JOIN users u ON u.id = p.user_id
-     WHERE b.user_id = $1
+     WHERE b.user_id = $1::uuid
        AND ($3::timestamptz IS NULL OR b.created_at < $3::timestamptz)
      ORDER BY b.created_at DESC
      LIMIT $2`,

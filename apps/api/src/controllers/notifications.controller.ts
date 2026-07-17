@@ -34,7 +34,7 @@ export const getNotifications = async (req: Request, res: Response): Promise<voi
 // ─── Mark all as read ─────────────────────────────────────────────────────────
 export const markAllRead = async (req: Request, res: Response): Promise<void> => {
   const { id: userId } = (req as AuthenticatedRequest).user;
-  await db.query('UPDATE notifications SET read = TRUE WHERE user_id = $1', [userId]);
+  await db.query('UPDATE notifications SET read = TRUE WHERE user_id = $1::uuid', [userId]);
   R.ok(res, null, 'Notifications marked as read');
 };
 
@@ -53,7 +53,7 @@ export const markOneRead = async (req: Request, res: Response): Promise<void> =>
 export const getUnreadCount = async (req: Request, res: Response): Promise<void> => {
   const { id: userId } = (req as AuthenticatedRequest).user;
   const { rows } = await db.query(
-    'SELECT COUNT(*) AS count FROM notifications WHERE user_id = $1 AND read = FALSE',
+    'SELECT COUNT(*) AS count FROM notifications WHERE user_id = $1::uuid AND read = FALSE',
     [userId]
   );
   R.ok(res, { count: Number(rows[0].count) });

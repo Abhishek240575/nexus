@@ -50,7 +50,7 @@ export const getUserPosts = async (req: Request, res: Response): Promise<void> =
       FROM likes l
       JOIN posts p ON p.id = l.post_id
       JOIN users u ON u.id = p.user_id
-      WHERE l.user_id = $1 AND p.is_published = TRUE
+      WHERE l.user_id = $1::uuid AND p.is_published = TRUE
       ${cursor ? 'AND l.created_at < $3' : ''}
       ORDER BY l.created_at DESC LIMIT $2`;
     params = cursor ? [profileId, limit, cursor] : [profileId, limit];
@@ -60,7 +60,7 @@ export const getUserPosts = async (req: Request, res: Response): Promise<void> =
              u.avatar_url AS author_avatar, u.verified AS author_verified,
              u.premium_tier AS author_tier
       FROM posts p JOIN users u ON u.id = p.user_id
-      WHERE p.user_id = $1 AND array_length(p.media_urls, 1) > 0
+      WHERE p.user_id = $1::uuid AND array_length(p.media_urls, 1) > 0
         AND p.is_published = TRUE
       ${cursor ? 'AND p.created_at < $3' : ''}
       ORDER BY p.created_at DESC LIMIT $2`;
@@ -71,7 +71,7 @@ export const getUserPosts = async (req: Request, res: Response): Promise<void> =
              u.avatar_url AS author_avatar, u.verified AS author_verified,
              u.premium_tier AS author_tier
       FROM posts p JOIN users u ON u.id = p.user_id
-      WHERE p.user_id = $1 AND p.reply_to_id IS NOT NULL AND p.is_published = TRUE
+      WHERE p.user_id = $1::uuid AND p.reply_to_id IS NOT NULL AND p.is_published = TRUE
       ${cursor ? 'AND p.created_at < $3' : ''}
       ORDER BY p.created_at DESC LIMIT $2`;
     params = cursor ? [profileId, limit, cursor] : [profileId, limit];
@@ -81,7 +81,7 @@ export const getUserPosts = async (req: Request, res: Response): Promise<void> =
              u.avatar_url AS author_avatar, u.verified AS author_verified,
              u.premium_tier AS author_tier
       FROM posts p JOIN users u ON u.id = p.user_id
-      WHERE p.user_id = $1 AND p.reply_to_id IS NULL AND p.is_published = TRUE
+      WHERE p.user_id = $1::uuid AND p.reply_to_id IS NULL AND p.is_published = TRUE
       ${cursor ? 'AND p.created_at < $3' : ''}
       ORDER BY p.created_at DESC LIMIT $2`;
     params = cursor ? [profileId, limit, cursor] : [profileId, limit];
@@ -106,13 +106,13 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
   if (!target[0]) { R.notFound(res, 'User not found'); return; }
 
   const existing = await db.query(
-    'SELECT 1 FROM follows WHERE follower_id = $1 AND following_id = $2',
+    'SELECT 1 FROM follows WHERE follower_id = $1::uuid AND following_id = $2',
     [followerId, followingId]
   );
 
   if (existing.rows[0]) {
     await db.query(
-      'DELETE FROM follows WHERE follower_id = $1 AND following_id = $2',
+      'DELETE FROM follows WHERE follower_id = $1::uuid AND following_id = $2',
       [followerId, followingId]
     );
     R.ok(res, { following: false });
@@ -158,7 +158,7 @@ export const getFollowing = async (req: Request, res: Response): Promise<void> =
     `SELECT u.id, u.handle, u.display_name, u.avatar_url, u.verified,
             u.premium_tier, u.bio, f.created_at AS followed_at
      FROM follows f JOIN users u ON u.id = f.following_id
-     WHERE f.follower_id = $1
+     WHERE f.follower_id = $1::uuid
        ${cursor ? 'AND f.created_at < $3' : ''}
      ORDER BY f.created_at DESC LIMIT $2`,
     cursor ? [id, limit, cursor] : [id, limit]
@@ -265,7 +265,7 @@ export const getFollowSuggestions = async (req: Request, res: Response): Promise
      WHERE u.id != $1
        AND u.suspended = FALSE
        AND u.id NOT IN (
-         SELECT following_id FROM follows WHERE follower_id = $1
+         SELECT following_id FROM follows WHERE follower_id = $1::uuid
        )
      ORDER BY u.followers_count DESC, u.verified DESC
      LIMIT $2`,
