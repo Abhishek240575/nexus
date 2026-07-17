@@ -3,13 +3,13 @@ import { db }  from '../config/db';
 import * as R  from '../utils/response';
 import { AuthenticatedRequest } from '../types';
 
-// ─── Get user profile by handle ───────────────────────────────────────────────
+// â”€â”€â”€ Get user profile by handle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const getProfile = async (req: Request, res: Response): Promise<void> => {
   const { handle } = req.params;
   const viewerId   = (req as any).user?.id;
 
   const { rows } = await db.query(
-    `SELECT u.id, u.handle, u.display_name, u.bio, u.avatar_url, u.header_url,
+    `SELECT u.id, u.handle, u.display_name, u.bio, u.avatar_url, u.cover_url,
             u.location, u.website, u.verified, u.premium_tier,
             u.is_journalist, u.press_credential_url,
             u.followers_count, u.following_count, u.posts_count, u.created_at,
@@ -26,7 +26,7 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
   R.ok(res, rows[0]);
 };
 
-// ─── Get user posts ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Get user posts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const getUserPosts = async (req: Request, res: Response): Promise<void> => {
   const { handle } = req.params;
   const viewerId   = (req as any).user?.id;
@@ -95,7 +95,7 @@ export const getUserPosts = async (req: Request, res: Response): Promise<void> =
   });
 };
 
-// ─── Follow / unfollow ────────────────────────────────────────────────────────
+// â”€â”€â”€ Follow / unfollow â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const followUser = async (req: Request, res: Response): Promise<void> => {
   const { id: followerId } = (req as AuthenticatedRequest).user;
   const { id: followingId } = req.params;
@@ -125,7 +125,7 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-// ─── Get followers ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Get followers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const getFollowers = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const limit  = Math.min(Number(req.query.limit) || 20, 50);
@@ -148,7 +148,7 @@ export const getFollowers = async (req: Request, res: Response): Promise<void> =
   });
 };
 
-// ─── Get following ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Get following â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const getFollowing = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const limit  = Math.min(Number(req.query.limit) || 20, 50);
@@ -171,10 +171,10 @@ export const getFollowing = async (req: Request, res: Response): Promise<void> =
   });
 };
 
-// ─── Update profile ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Update profile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const updateProfile = async (req: Request, res: Response): Promise<void> => {
   const { id } = (req as AuthenticatedRequest).user;
-  const { display_name, bio, location, website, avatar_url, header_url } = req.body;
+  const { display_name, bio, location, website, avatar_url, cover_url } = req.body;
 
   const { rows } = await db.query(
     `UPDATE users SET
@@ -183,19 +183,19 @@ export const updateProfile = async (req: Request, res: Response): Promise<void> 
        location     = COALESCE($3, location),
        website      = COALESCE($4, website),
        avatar_url   = COALESCE($5, avatar_url),
-       header_url   = COALESCE($6, header_url),
+       cover_url   = COALESCE($6, cover_url),
        updated_at   = NOW()
      WHERE id = $7
-     RETURNING id, handle, display_name, bio, avatar_url, header_url,
+     RETURNING id, handle, display_name, bio, avatar_url, cover_url,
                location, website, verified, premium_tier,
                followers_count, following_count, posts_count`,
-    [display_name, bio, location, website, avatar_url, header_url, id]
+    [display_name, bio, location, website, avatar_url, cover_url, id]
   );
 
   R.ok(res, rows[0]);
 };
 
-// ─── Search users + posts ─────────────────────────────────────────────────────
+// â”€â”€â”€ Search users + posts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const search = async (req: Request, res: Response): Promise<void> => {
   const q      = (req.query.q as string)?.trim();
   const type   = (req.query.type as string) || 'all'; // all | users | posts
@@ -236,7 +236,7 @@ export const search = async (req: Request, res: Response): Promise<void> => {
   R.ok(res, results);
 };
 
-// ─── Complete onboarding ──────────────────────────────────────────────────────
+// â”€â”€â”€ Complete onboarding â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const completeOnboarding = async (req: Request, res: Response): Promise<void> => {
   const { id: userId } = (req as any).user;
   const { languages = ['en'], interests = [] } = req.body;
@@ -253,7 +253,7 @@ export const completeOnboarding = async (req: Request, res: Response): Promise<v
   R.ok(res, { onboarded: true });
 };
 
-// ─── Get follow suggestions for onboarding ───────────────────────────────────
+// â”€â”€â”€ Get follow suggestions for onboarding â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const getFollowSuggestions = async (req: Request, res: Response): Promise<void> => {
   const { id: userId } = (req as any).user;
   const limit = Number(req.query.limit) || 12;

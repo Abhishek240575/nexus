@@ -1,4 +1,4 @@
-﻿import { Pool } from 'pg';
+import { Pool } from 'pg';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -7,7 +7,9 @@ export const db = new Pool({
   ssl: { rejectUnauthorized: false },
   max:                    5,
   idleTimeoutMillis:      10000,
-  connectionTimeoutMillis: 10000,
+  connectionTimeoutMillis: 30000,
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10000,
 });
 
 // Don't exit on pool errors - Neon serverless connections drop frequently
