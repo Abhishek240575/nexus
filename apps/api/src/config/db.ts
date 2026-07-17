@@ -1,21 +1,18 @@
-import { Pool } from 'pg';
+﻿import { Pool } from 'pg';
 import dotenv from 'dotenv';
-
 dotenv.config();
 
 export const db = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  },
-  max:               20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  ssl: { rejectUnauthorized: false },
+  max:                    5,
+  idleTimeoutMillis:      10000,
+  connectionTimeoutMillis: 10000,
 });
 
+// Don't exit on pool errors - Neon serverless connections drop frequently
 db.on('error', (err) => {
-  console.error('[DB] Unexpected pool error', err);
-  process.exit(-1);
+  console.error('[DB] Pool error (non-fatal):', err.message);
 });
 
 export const connectDB = async (): Promise<void> => {
