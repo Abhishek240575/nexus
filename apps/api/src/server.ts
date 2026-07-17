@@ -1,3 +1,5 @@
+process.on('uncaughtException', (err) => { console.error('[Server] Uncaught exception:', err.message); });
+process.on('unhandledRejection', (err) => { console.error('[Server] Unhandled rejection:', err); });
 import 'dotenv/config';
 import http        from 'http';
 import { Server }  from 'socket.io';
@@ -11,7 +13,7 @@ const PORT = process.env.PORT || 4000;
 
 const httpServer = http.createServer(app);
 
-// ─── Socket.io setup ──────────────────────────────────────────────────────────
+// â”€â”€â”€ Socket.io setup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const io = new Server(httpServer, {
   cors: {
     origin:      process.env.CLIENT_URL || 'http://localhost:5173',
@@ -23,7 +25,7 @@ export const io = new Server(httpServer, {
 
 registerSocketHandlers(io);
 
-// ─── Startup ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Startup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const start = async (): Promise<void> => {
   await connectDB();
   await redis.connect();
@@ -33,7 +35,7 @@ const start = async (): Promise<void> => {
     console.log(`[Nexus API] Environment: ${process.env.NODE_ENV}`);
   });
 
-  // ─── Hashtag velocity cron (hourly snapshots for Pro+ extended history) ──────
+  // â”€â”€â”€ Hashtag velocity cron (hourly snapshots for Pro+ extended history) â”€â”€â”€â”€â”€â”€
   // Run once immediately after startup, then every hour
   setTimeout(async () => {
     try {
