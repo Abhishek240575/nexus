@@ -5,11 +5,11 @@ import { createOrder, createSubscription, cancelSubscription as cancelRazorpaySu
 
 interface AuthReq extends Request { user: { id: string; handle: string; email: string; premium_tier: string } }
 
-// ─── Get all available tiers ──────────────────────────────────────────────────
+// â”€â”€â”€ Get all available tiers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const getTiers = async (req: Request, res: Response): Promise<void> => {
   try {
     const { rows } = await db.query(
-      `SELECT id, name, price_inr_monthly, max_post_length, features
+      `SELECT id, name, price_inr_monthly, price_inr_paise, max_post_length, max_space_listeners, display_name, features, is_active
        FROM subscription_tiers
        ORDER BY price_inr_monthly ASC`
     );
@@ -20,7 +20,7 @@ export const getTiers = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-// ─── Get current user subscription ───────────────────────────────────────────
+// â”€â”€â”€ Get current user subscription â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const getMySubscription = async (req: Request, res: Response): Promise<void> => {
   const { id: userId } = (req as AuthReq).user;
   try {
@@ -39,7 +39,7 @@ export const getMySubscription = async (req: Request, res: Response): Promise<vo
   }
 };
 
-// ─── Create subscription checkout ────────────────────────────────────────────
+// â”€â”€â”€ Create subscription checkout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const createSubscriptionCheckout = async (req: Request, res: Response): Promise<void> => {
   const { id: userId, handle, email } = (req as AuthReq).user;
   const { tier_id } = req.body;
@@ -74,7 +74,7 @@ export const createSubscriptionCheckout = async (req: Request, res: Response): P
   }
 };
 
-// ─── Verify subscription payment ──────────────────────────────────────────────
+// â”€â”€â”€ Verify subscription payment â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const verifySubscriptionPayment = async (req: Request, res: Response): Promise<void> => {
   const { id: userId } = (req as AuthReq).user;
   const { razorpay_payment_id, razorpay_subscription_id, razorpay_signature, tier } = req.body;
@@ -114,7 +114,7 @@ export const verifySubscriptionPayment = async (req: Request, res: Response): Pr
   }
 };
 
-// ─── Cancel subscription ──────────────────────────────────────────────────────
+// â”€â”€â”€ Cancel subscription â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const cancelSubscription = async (req: Request, res: Response): Promise<void> => {
   const { id: userId } = (req as AuthReq).user;
 
@@ -142,7 +142,7 @@ export const cancelSubscription = async (req: Request, res: Response): Promise<v
   }
 };
 
-// ─── Razorpay webhook ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Razorpay webhook â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const handleWebhook = async (req: Request, res: Response): Promise<void> => {
   try {
     const { verifyWebhookSignature } = await import('../services/razorpay.service');
