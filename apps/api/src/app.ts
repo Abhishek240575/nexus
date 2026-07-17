@@ -39,7 +39,7 @@ const app = express();
 app.set('trust proxy', 1);
 
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
-app.use(cors({ origin: process.env.FRONTEND_URL || 'https://nexus-web-bjks.onrender.com', credentials: true }));
+app.use(cors({ origin: (process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'https://nexus-web-bjks.onrender.com').split(','), credentials: true }));
 app.use(compression());
 app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
