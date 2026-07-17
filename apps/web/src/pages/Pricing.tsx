@@ -1,233 +1,202 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, Zap, Crown, Building2, Loader2, X } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Check, BadgeCheck, Zap, Crown, Building2, Loader2 } from 'lucide-react';
 import { api } from '@/services/api.client';
 import { useAuthStore } from '@/stores/auth.store';
-import { Link, useNavigate } from 'react-router-dom';
 
 declare global { interface Window { Razorpay: any; } }
-
-function loadRazorpay(): Promise<boolean> {
-  return new Promise(resolve => {
-    if (window.Razorpay) { resolve(true); return; }
-    const s = document.createElement('script');
-    s.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    s.onload = () => resolve(true);
-    s.onerror = () => resolve(false);
-    document.body.appendChild(s);
-  });
-}
 
 const billingService = {
   getTiers: () => api.get('/api/billing/tiers'),
   getMine:  () => api.get('/api/billing/me'),
   checkout: (tier_id: string) => api.post('/api/billing/checkout', { tier_id }),
-  verify:   (data: any) => api.post('/api/billing/verify', data),
   cancel:   () => api.post('/api/billing/cancel'),
 };
 
-const TIER_ICONS: Record<string, any> = { free: null, plus: Zap, pro: Crown, enterprise: Building2 };
-
-const TIER_COLORS: Record<string, string> = {
-  free:       'border-gray-200 dark:border-gray-700',
-  plus:       'border-blue-400 dark:border-blue-500',
-  pro:        'border-purple-500 dark:border-purple-400',
-  enterprise: 'border-amber-500 dark:border-amber-400',
-};
-
-const TIER_BADGE: Record<string, string> = {
-  free:       'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-  plus:       'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  pro:        'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
-  enterprise: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+const TIER_ICONS: Record<string, any> = {
+  free:       Check,
+  plus:       BadgeCheck,
+  pro:        Zap,
+  enterprise: Building2,
 };
 
 const TIER_TAGLINES: Record<string, string> = {
-  free:       'Get started for free',
-  plus:       'For active creators',
-  pro:        'For serious voices',
-  enterprise: 'For organisations and teams',
+  free:       'Get started on Deemona',
+  plus:       'For active voices who want to be seen',
+  pro:        'For journalists, activists & influencers',
+  enterprise: 'For organizations & newsrooms',
 };
 
-const TIER_FEATURES: Record<string, string[]> = {
-  free: [
-    'Up to 280 character posts',
-    'Follow up to 5,000 accounts',
-    'Basic feed',
-    'Community access',
-    'Standard notifications',
-  ],
-  plus: [
-    'Up to 1,000 character posts',
-    'Verified Plus badge',
-    'Advanced analytics dashboard',
-    'Priority in search results',
-    'Short video uploads (30s)',
-    'Creator subscriptions',
-    'Bookmark folders',
-    'Undo post (30s window)',
-  ],
-  pro: [
-    'Everything in Plus',
-    'Pro badge + journalist eligibility',
-    'Space recording and playback',
-    'Exclusive subscriber-only posts',
-    'Revenue dashboard',
-    'AI writing assistant (unlimited)',
-    'Custom post scheduling',
-    'API access (coming soon)',
-  ],
-  enterprise: [
-    'Everything in Pro',
-    'Organisation page',
-    'Team member management',
-    'Compliance dashboard',
-    'Audit logs',
-    'Priority support',
-    'Custom branding options',
-    'Dedicated account manager',
-  ],
-};
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (window.Razorpay) { resolve(true); return; }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload  = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
 
 export default function Pricing() {
   const { user }    = useAuthStore();
-  const navigate    = useNavigate();
   const queryClient = useQueryClient();
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
-  const [error, setError] = useState('');
+  const [cancelling,  setCancelling]  = useState(false);
 
-  const { data: tiersData } = useQuery({ queryKey: ['tiers'],            queryFn: billingService.getTiers });
-  const { data: mineData  } = useQuery({ queryKey: ['my-subscription'],  queryFn: billingService.getMine, enabled: !!user });
+  const { data: tiersData } = useQuery({ queryKey: ['tiers'],           queryFn: billingService.getTiers });
+  const { data: mineData  } = useQuery({ queryKey: ['my-subscription'], queryFn: billingService.getMine, enabled: !!user });
 
-  const tiers  = tiersData?.data?.data ?? [];
-  const myTier = user?.premium_tier || 'free';
-  const mySub  = mineData?.data?.data;
+  const tiers       = tiersData?.data?.data ?? [];
+  const mySub       = mineData?.data?.data;
+  const currentTier = user?.premium_tier || 'free';
 
-  const cancelMutation = useMutation({
-    mutationFn: billingService.cancel,
-    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['my-subscription'] }),
-  });
-
-  const handleSubscribe = async (tier: any) => {
-    if (!user) { navigate('/login'); return; }
-    if (tier.name === 'free' || tier.name === myTier) return;
-    setLoadingTier(tier.name);
-    setError('');
+  const handleSubscribe = async (tierId: string) => {
+    if (!user) { window.location.href = '/login'; return; }
+    setLoadingTier(tierId);
     try {
-      const loaded = await loadRazorpay();
-      if (!loaded) { setError('Could not load payment gateway.'); return; }
-      const res = await billingService.checkout(tier.name);
+      const loaded = await loadRazorpayScript();
+      if (!loaded) { alert('Could not load payment gateway. Please try again.'); return; }
+
+      const res = await billingService.checkout(tierId);
       const { order_id, amount } = res.data.data;
-      const options = {
-        key:         import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_placeholder',
-        amount, currency: 'INR',
-        name:        'Deemona',
-        description: `${tier.name} Subscription`,
+
+      const rzp = new window.Razorpay({
+        key:         import.meta.env.VITE_RAZORPAY_KEY_ID || '',
         order_id,
+        amount,
+        currency:    'INR',
+        name:        'Deemona',
+        description: `${tierId.charAt(0).toUpperCase() + tierId.slice(1)} subscription`,
+        theme:       { color: '#1d9bf0' },
         handler: async (response: any) => {
           try {
-            await billingService.verify({ ...response, tier: tier.name });
+            await api.post('/api/billing/verify', { ...response, tier: tierId });
             queryClient.invalidateQueries({ queryKey: ['my-subscription'] });
-            navigate('/');
-          } catch { setError('Payment verification failed.'); }
+            alert('Subscription activated! Welcome to Deemona ' + tierId.charAt(0).toUpperCase() + tierId.slice(1) + '.');
+          } catch {
+            alert('Payment verification failed. Please contact support.');
+          }
         },
+        modal: { ondismiss: () => setLoadingTier(null) },
         prefill: { email: user.email },
-        theme:   { color: '#1d9bf0' },
-      };
-      new window.Razorpay(options).open();
+      });
+      rzp.open();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Something went wrong.');
+      alert(err.response?.data?.error || 'Could not start checkout. Please try again.');
     } finally {
       setLoadingTier(null);
     }
   };
 
+  const handleCancel = async () => {
+    if (!confirm('Cancel your subscription? You will keep premium access until the end of the current billing period.')) return;
+    setCancelling(true);
+    try {
+      await billingService.cancel();
+      queryClient.invalidateQueries({ queryKey: ['my-subscription'] });
+    } catch {
+      alert('Could not cancel subscription. Please try again.');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-white dark:bg-black">
-      <div className="max-w-5xl mx-auto px-4 py-12">
+    <div>
+      <div className="sticky top-0 bg-white/80 dark:bg-black/80 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800 z-10 px-4 py-4 text-center">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Deemona Premium</h1>
+        <p className="text-sm text-gray-500 mt-1">Credibility, reach, and tools for serious voices</p>
+      </div>
 
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-black text-gray-900 dark:text-white mb-3">Deemona Premium</h1>
-          <p className="text-gray-500 text-lg">Credibility, reach, and tools for serious voices</p>
-        </div>
-
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl px-4 py-3 mb-8 flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
-            <X size={16} /> {error}
+      {mySub && currentTier !== 'free' && (
+        <div className="px-4 py-3 bg-brand/5 border-b border-brand/20 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BadgeCheck size={16} className="text-brand" />
+            <span className="text-sm text-gray-900 dark:text-white">
+              You're on <span className="font-semibold capitalize">{currentTier}</span>
+              {mySub.cancel_at_period_end && <span className="text-gray-500"> (cancels at period end)</span>}
+            </span>
           </div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-          {tiers.map((tier: any) => {
-            const Icon      = TIER_ICONS[tier.name];
-            const isCurrent = myTier === tier.name;
-            const isLoading = loadingTier === tier.name;
-            const features  = TIER_FEATURES[tier.name] || [];
-
-            return (
-              <div key={tier.name}
-                className={`rounded-3xl border-2 p-6 flex flex-col ${TIER_COLORS[tier.name]} ${isCurrent ? 'ring-2 ring-brand ring-offset-2 dark:ring-offset-black' : ''}`}>
-
-                <div className="flex items-center gap-2 mb-2">
-                  {Icon && <Icon size={18} className="text-brand" />}
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${TIER_BADGE[tier.name]}`}>
-                    {tier.name}
-                  </span>
-                  {isCurrent && <span className="text-xs bg-brand text-white px-2 py-0.5 rounded-full ml-auto">Current</span>}
-                </div>
-
-                <p className="text-xs text-gray-500 mb-4">{TIER_TAGLINES[tier.name]}</p>
-
-                <div className="mb-5">
-                  {tier.price_inr_monthly === 0 ? (
-                    <p className="text-3xl font-black text-gray-900 dark:text-white">Free</p>
-                  ) : (
-                    <p className="text-3xl font-black text-gray-900 dark:text-white">
-                      ₹{tier.price_inr_monthly}<span className="text-sm font-normal text-gray-500">/month</span>
-                    </p>
-                  )}
-                </div>
-
-                <ul className="space-y-2 flex-1 mb-6">
-                  {features.map((f, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
-                      <Check size={14} className="text-brand mt-0.5 flex-shrink-0" /> {f}
-                    </li>
-                  ))}
-                </ul>
-
-                {tier.name === 'free' ? (
-                  isCurrent ? (
-                    <button disabled className="w-full py-2.5 rounded-full text-sm font-semibold bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-default">Current plan</button>
-                  ) : (
-                    <Link to="/register" className="block w-full py-2.5 rounded-full text-sm font-semibold text-center bg-gray-900 dark:bg-white text-white dark:text-black hover:opacity-90">Get started free</Link>
-                  )
-                ) : isCurrent ? (
-                  <div className="space-y-2">
-                    <button disabled className="w-full py-2.5 rounded-full text-sm font-semibold bg-brand/10 text-brand cursor-default">Current plan</button>
-                    {mySub && !mySub.cancel_at_period_end && (
-                      <button onClick={() => cancelMutation.mutate()} className="w-full py-2 rounded-full text-xs text-gray-400 hover:text-red-500 transition-colors">Cancel subscription</button>
-                    )}
-                    {mySub?.cancel_at_period_end && <p className="text-xs text-center text-orange-500">Cancels at period end</p>}
-                  </div>
-                ) : !user ? (
-                  <Link to="/login" className="block w-full py-2.5 rounded-full text-sm font-semibold text-center bg-brand text-white hover:bg-brand-dark">Subscribe to {tier.name}</Link>
-                ) : (
-                  <button onClick={() => handleSubscribe(tier)} disabled={!!loadingTier}
-                    className="w-full py-2.5 rounded-full text-sm font-semibold bg-brand text-white hover:bg-brand-dark disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
-                    {isLoading ? <><Loader2 size={14} className="animate-spin" /> Processing…</> : `Subscribe to ${tier.name}`}
-                  </button>
-                )}
-              </div>
-            );
-          })}
+          {!mySub.cancel_at_period_end && (
+            <button onClick={handleCancel} disabled={cancelling}
+              className="text-xs text-red-500 hover:underline disabled:opacity-50">
+              {cancelling ? 'Cancelling…' : 'Cancel'}
+            </button>
+          )}
         </div>
+      )}
 
-        <p className="text-center text-xs text-gray-400">
-          Payments processed securely via Razorpay · Supports cards and UPI Autopay<br />
-          Cancel anytime — premium access continues until end of billing period
-        </p>
+      <div className="px-4 py-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        {tiers.map((tier: any) => {
+          const Icon        = TIER_ICONS[tier.name] || Check;
+          const isCurrent   = tier.name === currentTier;
+          const isFree      = tier.name === 'free';
+          const priceRupees = tier.price_inr_paise / 100;
+          const features    = tier.features || {};
 
+          return (
+            <div key={tier.name}
+              className={`rounded-2xl border-2 p-5 flex flex-col ${
+                tier.name === 'pro' ? 'border-brand bg-brand/5' : 'border-gray-200 dark:border-gray-700'
+              }`}>
+              {tier.name === 'pro' && (
+                <span className="self-start text-xs font-bold text-brand bg-brand/10 px-2 py-0.5 rounded-full mb-2">
+                  MOST POPULAR
+                </span>
+              )}
+              <div className="flex items-center gap-2 mb-1">
+                <Icon size={20} className="text-brand" />
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white capitalize">{tier.display_name || tier.name}</h2>
+              </div>
+              <p className="text-xs text-gray-500 mb-3">{TIER_TAGLINES[tier.name]}</p>
+              <p className="text-2xl font-black text-gray-900 dark:text-white mb-4">
+                {isFree ? 'Free' : <>₹{priceRupees}<span className="text-sm font-normal text-gray-500">/month</span></>}
+              </p>
+
+              <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300 mb-5 flex-1">
+                <li className="flex gap-2"><Check size={14} className="text-green-500 flex-shrink-0 mt-0.5" /> Up to {tier.max_post_length} character posts</li>
+                <li className="flex gap-2"><Check size={14} className="text-green-500 flex-shrink-0 mt-0.5" /> {(tier.max_space_listeners === -1 || tier.max_space_listeners === 9999) ? 'Unlimited' : tier.max_space_listeners} Space listeners</li>
+                {features.verified_badge    && <li className="flex gap-2"><Check size={14} className="text-green-500 flex-shrink-0 mt-0.5" /> Verified blue tick badge</li>}
+                {features.ads === false     && <li className="flex gap-2"><Check size={14} className="text-green-500 flex-shrink-0 mt-0.5" /> Ad-free experience</li>}
+                {features.analytics === 'advanced' && <li className="flex gap-2"><Check size={14} className="text-green-500 flex-shrink-0 mt-0.5" /> Advanced analytics &amp; demographics</li>}
+                {features.priority_visibility && <li className="flex gap-2"><Check size={14} className="text-green-500 flex-shrink-0 mt-0.5" /> Priority visibility in feeds</li>}
+                {features.space_recording   && <li className="flex gap-2"><Check size={14} className="text-green-500 flex-shrink-0 mt-0.5" /> Record &amp; archive Spaces</li>}
+                {features.ticketed_spaces   && <li className="flex gap-2"><Check size={14} className="text-green-500 flex-shrink-0 mt-0.5" /> Ticketed Spaces (monetize audio events)</li>}
+                {features.custom_branding   && <li className="flex gap-2"><Check size={14} className="text-green-500 flex-shrink-0 mt-0.5" /> Custom community branding</li>}
+                {features.compliance_dashboard && <li className="flex gap-2"><Check size={14} className="text-green-500 flex-shrink-0 mt-0.5" /> Compliance &amp; audit dashboard</li>}
+                {features.legal_protection_metadata && <li className="flex gap-2"><Check size={14} className="text-green-500 flex-shrink-0 mt-0.5" /> Journalist legal protection metadata</li>}
+              </ul>
+
+              {isFree ? (
+                isCurrent ? (
+                  <button disabled className="w-full py-2.5 rounded-full text-sm font-semibold bg-gray-100 dark:bg-gray-800 text-gray-400">
+                    Current plan
+                  </button>
+                ) : (
+                  <a href="/register" className="block w-full py-2.5 rounded-full text-sm font-semibold text-center bg-gray-900 dark:bg-white text-white dark:text-black hover:opacity-90">
+                    Get started free
+                  </a>
+                )
+              ) : isCurrent ? (
+                <button disabled className="w-full py-2.5 rounded-full text-sm font-semibold bg-green-50 dark:bg-green-900/20 text-green-600">
+                  ✓ Active plan
+                </button>
+              ) : (
+                <button onClick={() => handleSubscribe(tier.name)} disabled={loadingTier === tier.name}
+                  className="w-full py-2.5 rounded-full text-sm font-semibold bg-brand text-white hover:bg-brand-dark disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+                  {loadingTier === tier.name
+                    ? <><Loader2 size={14} className="animate-spin" /> Starting…</>
+                    : `Subscribe to ${tier.display_name || tier.name}`}
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="px-4 pb-8 text-xs text-gray-400 text-center">
+        Payments processed securely via Razorpay. Cancel anytime — premium access continues until the end of your billing period.
       </div>
     </div>
   );
