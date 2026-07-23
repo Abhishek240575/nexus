@@ -1,5 +1,6 @@
 process.on('uncaughtException', (err) => { console.error('[Server] Uncaught exception:', err.message); });
 process.on('unhandledRejection', (err) => { console.error('[Server] Unhandled rejection:', err); });
+
 import 'dotenv/config';
 import http        from 'http';
 import { Server }  from 'socket.io';
@@ -13,10 +14,9 @@ const PORT = process.env.PORT || 4000;
 
 const httpServer = http.createServer(app);
 
-// â”€â”€â”€ Socket.io setup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const io = new Server(httpServer, {
   cors: {
-    origin:      process.env.CLIENT_URL || 'http://localhost:5173',
+    origin:      (process.env.CORS_ORIGIN || process.env.CLIENT_URL || 'http://localhost:5173').split(','),
     credentials: true,
   },
   pingTimeout:  60000,
@@ -25,18 +25,23 @@ export const io = new Server(httpServer, {
 
 registerSocketHandlers(io);
 
-// â”€â”€â”€ Startup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const start = async (): Promise<void> => {
   await connectDB();
-  await redis.connect();
+
+  // Redis is optional - server starts even if Redis is unavailable
+  try {
+    await redis.connect();
+    console.log('[Redis] Connected');
+  } catch (err: any) {
+    console.error('[Redis] Failed to connect (non-fatal):', err.message);
+    console.log('[Redis] Continuing without Redis...');
+  }
 
   httpServer.listen(PORT, () => {
     console.log(`[Nexus API] Running on http://localhost:${PORT}`);
     console.log(`[Nexus API] Environment: ${process.env.NODE_ENV}`);
   });
 
-  // â”€â”€â”€ Hashtag velocity cron (hourly snapshots for Pro+ extended history) â”€â”€â”€â”€â”€â”€
-  // Run once immediately after startup, then every hour
   setTimeout(async () => {
     try {
       await recordHashtagVelocitySnapshot();
@@ -44,7 +49,7 @@ const start = async (): Promise<void> => {
     } catch (err: any) {
       console.error('[VelocityCron] Initial snapshot failed:', err.message);
     }
-  }, 30000); // 30s after boot to let DB settle
+  }, 30000);
 
   setInterval(async () => {
     try {
@@ -52,7 +57,7 @@ const start = async (): Promise<void> => {
     } catch (err: any) {
       console.error('[VelocityCron] Hourly snapshot failed:', err.message);
     }
-  }, 60 * 60 * 1000); // every 60 minutes
+  }, 60 * 60 * 1000);
 };
 
 start().catch((err) => {
