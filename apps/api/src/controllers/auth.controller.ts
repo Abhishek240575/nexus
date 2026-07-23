@@ -16,7 +16,7 @@ import {
 import * as R from '../utils/response';
 import { AuthenticatedRequest } from '../types';
 
-// ─── Register ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Register â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const register = async (req: Request, res: Response): Promise<void> => {
   const { handle, email, password, display_name } = req.body;
 
@@ -30,7 +30,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  const password_hash = await bcrypt.hash(password, 12);
+  const password_hash = await bcrypt.hash(password, 8);
   const verifyToken   = uuidv4();
 
   const { rows } = await db.query(
@@ -52,7 +52,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     [user.id, req.ip]
   ).catch(() => {}); // non-blocking
 
-  // Send verification email — non-blocking, don't fail registration if email fails
+  // Send verification email â€” non-blocking, don't fail registration if email fails
   sendVerificationEmail(email, handle, verifyToken).catch(err => {
     console.error('[Email] Failed to send verification email:', err?.message);
   });
@@ -62,7 +62,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   }, 'Account created. Please verify your email.');
 };
 
-// ─── Login ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const login = async (req: Request, res: Response): Promise<void> => {
   const { identifier, password } = req.body; // identifier = email or handle
 
@@ -98,7 +98,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   });
 };
 
-// ─── Refresh token ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Refresh token â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const refreshToken = async (req: Request, res: Response): Promise<void> => {
   const { refresh_token } = req.body;
   if (!refresh_token) { R.badRequest(res, 'Refresh token required'); return; }
@@ -130,7 +130,7 @@ export const refreshToken = async (req: Request, res: Response): Promise<void> =
   R.ok(res, { access_token: newAccessToken, refresh_token: newRefreshToken });
 };
 
-// ─── Logout ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Logout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const logout = async (req: Request, res: Response): Promise<void> => {
   const user = (req as AuthenticatedRequest).user;
 
@@ -148,7 +148,7 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
   R.ok(res, null, 'Logged out');
 };
 
-// ─── Verify email ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Verify email â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const verifyEmail = async (req: Request, res: Response): Promise<void> => {
   const { token } = req.query as { token: string };
   if (!token) { res.redirect(`${process.env.FRONTEND_URL || 'https://nexus-web-bjks.onrender.com'}/login?error=invalid_token`); return; }
@@ -166,7 +166,7 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
   res.redirect(`${process.env.FRONTEND_URL || 'https://nexus-web-bjks.onrender.com'}/login?verified=1`);
 };
 
-// ─── Forgot password ──────────────────────────────────────────────────────────
+// â”€â”€â”€ Forgot password â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
   const { email } = req.body;
   const { rows }  = await db.query(
@@ -183,14 +183,14 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
   R.ok(res, null, 'If that email exists, a reset link has been sent');
 };
 
-// ─── Reset password ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Reset password â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const resetPassword = async (req: Request, res: Response): Promise<void> => {
   const { token, password } = req.body;
 
   const userId = await redis.get(`reset:${token}`);
   if (!userId) { R.badRequest(res, 'Invalid or expired reset link'); return; }
 
-  const password_hash = await bcrypt.hash(password, 12);
+  const password_hash = await bcrypt.hash(password, 8);
   await db.query('UPDATE users SET password_hash = $1 WHERE id = $2', [password_hash, userId]);
   await redis.del(`reset:${token}`);
   await deleteRefreshToken(userId); // force re-login everywhere
@@ -198,7 +198,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
   R.ok(res, null, 'Password updated. Please log in.');
 };
 
-// ─── OAuth success callback (redirect with tokens) ────────────────────────────
+// â”€â”€â”€ OAuth success callback (redirect with tokens) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const oauthSuccess = async (req: Request, res: Response): Promise<void> => {
   const user = (req as any).user;
   if (!user) { res.redirect(`${process.env.CLIENT_URL}/login?error=oauth_failed`); return; }
@@ -212,7 +212,7 @@ export const oauthSuccess = async (req: Request, res: Response): Promise<void> =
   );
 };
 
-// ─── Get current user (me) ────────────────────────────────────────────────────
+// â”€â”€â”€ Get current user (me) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const getMe = async (req: Request, res: Response): Promise<void> => {
   const { id } = (req as AuthenticatedRequest).user;
 
